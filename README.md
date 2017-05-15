@@ -85,7 +85,7 @@ kv.rangeDelete({
 });
 ```
 
-Please check the API section for details.
+Please check the API section for more.
 
 ### Watch Client
 
@@ -125,6 +125,52 @@ watcher.on("error", (err) => {
   }
 });
 ```
+
+## API
+
+**KVClient({ endpoints, connect });**
+
+> Etcd client for communicating with VK service.
+
+| Option | Type | Required | Default | Description
+|--------|------|----------|---------|------------
+| endpoints | String[] | No | ["127.0.0.1:2379"] | List of etc servers. Use IPs instead of DNS addresses to prevent possible process hanging.
+| connect | Boolean | No | true | Automatically connects.
+
+**KVClient.prototype.range({ key, rangeEnd, limit, revision, sortOrder, sortTarget, serializable, keysOnly, countOnly }): Promise;**
+
+> Gets the keys in the range from the key-value store.
+
+| Option | Type | Required | Default | Description
+|--------|------|----------|---------|------------
+| key | Buffer | Yes | - | The first key for the range. If it is not given, the request only looks up key.
+| rangeEnd | Buffer | No | - | The upper bound on the requested range [key, rangeEnd). If rangeEnd is '\0', the range is all keys >= key. If the rangeEnd is one bit larger than the given key, then the range requests get the all keys with the prefix (the given key). If both key and rangeEnd are '\0', then range requests returns all keys.
+| limit | Number | No | - | A limit on the number of keys returned for the request.
+| revision | Buffer | No | - | The point-in-time of the key-value store to use for the range. If revision is less or equal to zero, the range is over the newest key-value store. If the revision has been compacted, ErrCompacted is returned as a response.
+| sortOrder | Number | No | - | The order for returned sorted results.
+| sortTarget | Number | No | 0 | The key-value field to use for sorting.
+| serializable | Boolean | No | false | Sets the range request to use serializable member-local reads. Range requests are linearizable by default; linearizable requests have higher latency and lower throughput than serializable requests but reflect the current consensus of the cluster. For better performance, in exchange for possible stale reads, a serializable range request is served locally without needing to reach consensus with other nodes in the cluster.
+| keysOnly | Boolean | No | false | When set returns only the keys and not the values.
+| countOnly | Boolean | No | false | When set returns only the count of the keys in the range.
+
+**KVClient.prototype.put({ key, value }): Promise;**
+
+> Puts the given key into the key-value store. A put request increments the revision of the key-value store and generates one event in the event history.
+
+| Option | Type | Required | Default | Description
+|--------|------|----------|---------|------------
+| key | Buffer | Yes | - | The key, in bytes, to put into the key-value store.
+| value | Buffer | Yes | - | The value, in bytes, to associate with the key in the key-value store.
+| lease | String | No | - | The lease ID to associate with the key in the key-value store. A lease value of 0 indicates no lease.
+
+**KVClient.prototype.deleteRange({ key, value }): Promise;**
+
+> Deletes the given range from the key-value store. A delete request increments the revision of the key-value store and generates a delete event in the event history for every deleted key.
+
+| Option | Type | Required | Default | Description
+|--------|------|----------|---------|------------
+| key | Buffer | Yes | - | The first key to delete in the range.
+| rangeEnd | Buffer | No | - | The key following the last key to delete for the range [key, rangeEnd). If rangeEnd is not given, the range is defined to contain only the key argument. If rangeEnd is '\0', the range is all keys greater than or equal to the key argument.
 
 ## License (MIT)
 

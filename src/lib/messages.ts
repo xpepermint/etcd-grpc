@@ -251,3 +251,21 @@ export interface IEvent {
   prevKv: IKeyValue;
 }
 
+export interface ICompactionRequest {
+  /**
+   * The key-value store revision for the compaction operation.
+   */
+  revision?: string | number;
+  /**
+   * When set the RPC will wait until the compaction is physically applied to the local
+   * database such that compacted entries are totally removed from the backend database.
+   */
+  physical?: boolean;
+}
+
+export interface ICompactionResponse {
+  /**
+   * Request metadata.
+   */
+  header: IResponseHeader;
+}
