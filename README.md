@@ -128,6 +128,16 @@ watcher.on("error", (err) => {
 
 ## API
 
+### Classes & Methods
+
+**getErrorKind(err): String;**
+
+> Returns the kind of the provided error.
+
+| Option | Type | Required | Default | Description
+|--------|------|----------|---------|------------
+| err | Error | Yes | - | Etcd/gRPC error.
+
 **KVClient({ endpoints, connect });**
 
 > Etcd client for communicating with VK service.
@@ -136,6 +146,14 @@ watcher.on("error", (err) => {
 |--------|------|----------|---------|------------
 | endpoints | String[] | No | ["127.0.0.1:2379"] | List of etc servers. Use IPs instead of DNS addresses to prevent possible process hanging.
 | connect | Boolean | No | true | Automatically connects.
+
+**KVClient.prototype.close(): void;**
+
+> Closes client connection.
+
+**KVClient.prototype.connect(): void;**
+
+> Initializes the client connection.
 
 **KVClient.prototype.compact({ revision, physical }): Promise;**
 
@@ -154,6 +172,10 @@ watcher.on("error", (err) => {
 |--------|------|----------|---------|------------
 | key | Buffer | Yes | - | The first key to delete in the range.
 | rangeEnd | Buffer | No | - | The key following the last key to delete for the range [key, rangeEnd). If rangeEnd is not given, the range is defined to contain only the key argument. If rangeEnd is '\0', the range is all keys greater than or equal to the key argument.
+
+**KVClient.prototype.isConnected(): Boolean;**
+
+> Returns true if the client is initialized.
 
 **KVClient.prototype.put({ key, value }): Promise;**
 
@@ -180,6 +202,85 @@ watcher.on("error", (err) => {
 | serializable | Boolean | No | false | Sets the range request to use serializable member-local reads. Range requests are linearizable by default; linearizable requests have higher latency and lower throughput than serializable requests but reflect the current consensus of the cluster. For better performance, in exchange for possible stale reads, a serializable range request is served locally without needing to reach consensus with other nodes in the cluster.
 | keysOnly | Boolean | No | false | When set returns only the keys and not the values.
 | countOnly | Boolean | No | false | When set returns only the count of the keys in the range.
+
+**KVClient.prototype.reconnect(): void;**
+
+> Reconnects to the next available server in RoundRobin style.
+
+**KVWatch({ endpoints, connect });**
+
+> Etcd client for communicating with VK service.
+
+| Option | Type | Required | Default | Description
+|--------|------|----------|---------|------------
+| endpoints | String[] | No | ["127.0.0.1:2379"] | List of etc servers. Use IPs instead of DNS addresses to prevent possible process hanging.
+| connect | Boolean | No | true | Automatically connects.
+
+**KVWatch.prototype.close(): void;**
+
+> Closes client connection.
+
+**KVWatch.prototype.connect(): void;**
+
+> Initializes the client connection.
+
+**KVWatch.prototype.isConnected(): Boolean;**
+
+> Returns true if the client is initialized.
+
+**KVClient.prototype.isWatching(): Boolean;**
+
+> Returns true if the stream is listening for changes.
+
+**KVWatch.prototype.reconnect(): void;**
+
+> Reconnects to the next available server in RoundRobin style.
+
+### Constants
+
+**EDGE_KEY: String**
+
+> First or last key.
+
+**NONE_SORT_ORDER: Number**
+
+> No sorting (default).
+
+**ASCEND_SORT_ORDER: Number**
+
+> Lowest target value first.
+
+**DESCEND_SORT_ORDER: Number**
+
+> Highest target value first.
+
+**KEY_SORT_TARGET: Number**
+
+> Key name sort target.
+
+**VERSION_SORT_TARGET: Number**
+
+> Version sort target.
+
+**CREATE_SORT_TARGET: Number**
+
+> Created index sort target.
+
+**MOD_SORT_TARGET: Number**
+
+> Modified index sort target.
+
+**VALUE_SORT_TARGET: Number**
+
+> Key value sort target.
+
+**PUT_EVENT_TYPE: Number**
+
+> Put KV event type.
+
+**DELETE_EVENT_TYPE: Number**
+
+> Delete KV event type.
 
 ## License (MIT)
 

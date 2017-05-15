@@ -53,7 +53,7 @@ export abstract class Client extends EventEmitter {
   }
 
   /**
-   * Opens connections for all supported services.
+   * Initializes the client connection.
    */
   public connect() {
     if (this.client) { return; }
@@ -66,7 +66,7 @@ export abstract class Client extends EventEmitter {
   }
 
   /**
-   * Closes connections for all supported services.
+   * Closes client connection.
    */
   public close() {
     if (!this.client) { return; }

@@ -95,7 +95,7 @@ export class WatchClient extends Client {
   }
 
   /**
-   * Returns true if the stream is watching for changes.
+   * Returns true if the stream is listening for changes.
    */
   public isWatching() {
     return this.watching;
