@@ -216,6 +216,10 @@ watcher.on("error", (err) => {
 | endpoints | String[] | No | ["127.0.0.1:2379"] | List of etc servers. Use IPs instead of DNS addresses to prevent possible process hanging.
 | connect | Boolean | No | true | Automatically connects.
 
+**KVWatch.prototype.cancel(): void;**
+
+> Stops listening for changes but stays connected.
+
 **KVWatch.prototype.close(): void;**
 
 > Closes client connection.
@@ -235,6 +239,17 @@ watcher.on("error", (err) => {
 **KVWatch.prototype.reconnect(): void;**
 
 > Reconnects to the next available server in RoundRobin style.
+
+**KVWatch.prototype.watch({ key, rangeEnd, startRevision, progressNotify }): void;**
+
+> Starts listening for changes.
+
+| Option | Type | Required | Default | Description
+|--------|------|----------|---------|------------
+| key | Buffer | No | - | The key to register for watching.
+| rangeEnd | Buffer | No | - | The end of the range [key, rangeEnd) to watch. If rangeEnd is not given, only the key argument is watched. If rangeEnd is equal to '\0', all keys greater than or equal to the key argument are watched.
+| startRevision | String | No | - | An optional revision to watch from (inclusive). No startRevision is "now".
+| progressNotify | Boolean | No | - | If set then the etcd server will periodically send a IWatchResponse with no events to the new watcher if there are no recent events. It is useful when clients wish to recover a disconnected watcher starting from a recent known revision. The etcd server may decide how often it will send notifications based on current load.
 
 ### Constants
 

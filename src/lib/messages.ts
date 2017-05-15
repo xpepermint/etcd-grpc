@@ -140,7 +140,7 @@ export interface IWatchCreateRequest {
   /**
    * The key to register for watching.
    */
-  key: Buffer;
+  key?: Buffer;
   /**
    * The end of the range [key, rangeEnd) to watch. If rangeEnd is not
    * given, only the key argument is watched. If rangeEnd is equal to '\0',
