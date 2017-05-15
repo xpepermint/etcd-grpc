@@ -1,5 +1,5 @@
 {
-  "name": "etcd-grpcr",
+  "name": "etcd-grpc",
   "version": "0.1.0",
   "description": "A gRPC based etcd client for NodeJS targeting etcd V3.",
   "main": "./dist/src/index.js",
