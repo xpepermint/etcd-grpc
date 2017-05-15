@@ -45,9 +45,9 @@ export class KVClient extends Client {
   }
 
   /**
-   * Compact compacts the event history in the etcd key-value store. The key-value
-   * store should be periodically compacted or the event history will continue to
-   * grow indefinitely.
+   * Compacts the event history in the etcd key-value store. The key-value store
+   * should be periodically compacted or the event history will continue to grow
+   * indefinitely.
    */
   public compact(req: ICompactionRequest): Promise<ICompactionResponse> {
     return this.perform("compact", req);
