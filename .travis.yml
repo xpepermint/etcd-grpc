@@ -1,0 +1,9 @@
+language: node_js
+node_js:
+  - "7"
+  - "6"
+sudo: required
+services:
+  - docker
+before_install:
+- docker run -d -p 2379:2379 quay.io/coreos/etcd:v3.0.11 etcd --listen-client-urls="http://0.0.0.0:2379" --advertise-client-urls="http://localhost:2379"

@@ -1,0 +1,48 @@
+{
+  "name": "etcd-grpcr",
+  "version": "0.1.0",
+  "description": "A gRPC based etcd client for NodeJS targeting etcd V3.",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "ava": {
+    "files": [
+      "./dist/tests/*.js",
+      "./dist/tests/**/*.js"
+    ],
+    "concurrency": 1,
+    "failFast": true
+  },
+  "scripts": {
+    "clean": "rm -Rf ./dist",
+    "build": "npm run clean; tsc",
+    "lint": "tslint 'src/**/*.ts?(x)'",
+    "prepublish": "npm run build",
+    "test": "npm run build && ava"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xpepermint/etcd-grpc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/xpepermint/etcd-grpc/issues"
+  },
+  "homepage": "https://github.com/xpepermint/etcd-grpc#readme",
+  "keywords": [
+    "etcd",
+    "grpc",
+    "client"
+  ],
+  "author": "Kristijan Sedlak (Xpepermint)",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^7.0.18",
+    "ava": "^0.19.1",
+    "tslint": "^5.1.0",
+    "typescript": "^2.2.2"
+  },
+  "dependencies": {
+    "grpc": "^1.3.2",
+    "object-keys-normalizer": "^1.0.1",
+    "promised-timeout": "^0.5.1"
+  }
+}
