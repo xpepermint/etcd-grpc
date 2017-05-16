@@ -1,5 +1,7 @@
 ![Build Status](https://travis-ci.org/xpepermint/etcd-grpc.svg?branch=master)&nbsp;[![NPM Version](https://badge.fury.io/js/etcd-grpc.svg)](https://badge.fury.io/js/etcd-grpc)&nbsp;[![Dependency Status](https://gemnasium.com/xpepermint/etcd-grpc.svg)](https://gemnasium.com/xpepermint/etcd-grpc)
 
+**WARNING: Deprecated in favor of [etcd3](https://github.com/WatchBeam/etcd3).**
+
 # [etcd](https://github.com/coreos/etcd)-[grpc](http://www.grpc.io/)
 
 > A gRPC based etcd client for NodeJS targeting etcd V3.
@@ -126,6 +128,29 @@ watcher.on("error", (err) => {
 });
 ```
 
+### Lease Client
+
+The `Lease` service provides an interface for managing keys TTL. We can use that to set the automatic expiration for one or multiple keys. The following example shows how to set a key which is automatically removed after 10s.
+
+```js
+import { LeaseClient } from "etcd-grpc";
+
+const lease = new LeaseClient();
+
+lease.leaseGrant({
+  TTL: 5,
+  ID: 100
+}).then(({ id }) => {
+  return kv.put({
+    key: new Buffer("name"),
+    value: new Buffer("John"),
+    lease: id, // attach this key to lease
+  });
+});
+```
+
+You will find more information about this client in the API section. Note also that this client provides the same connectivity logic as the `KVClient`. 
+
 ## API
 
 ### Classes & Methods
@@ -207,7 +232,49 @@ watcher.on("error", (err) => {
 
 > Reconnects to the next available server in RoundRobin style.
 
-**KVWatch({ endpoints, connect });**
+**LeaseClient({ endpoints, connect });**
+
+> Etcd client for managing keys TTL.
+
+| Option | Type | Required | Default | Description
+|--------|------|----------|---------|------------
+| endpoints | String[] | No | ["127.0.0.1:2379"] | List of etc servers. Use IPs instead of DNS addresses to prevent possible process hanging.
+| connect | Boolean | No | true | Automatically connects.
+
+**LeaseClient.prototype.close(): void;**
+
+> Closes client connection.
+
+**LeaseClient.prototype.connect(): void;**
+
+> Initializes the client connection.
+
+**LeaseClient.prototype.isConnected(): Boolean;**
+
+> Returns true if the client is initialized.
+
+**LeaseClient.prototype.leaseGrant({ id, ttl }): Promise;**
+
+> Creates a lease which expires if the server does not receive a keepAlive within a given time to live period. All keys attached to the lease will be expired and deleted if the lease expires. Each expired key generates a delete event in the event history.
+
+| Option | Type | Required | Default | Description
+|--------|------|----------|---------|------------
+| id | String | No | - | The requested ID for the lease. If ID is set to 0, the lessor chooses an ID.
+| ttl | Number | No | 2 | The advisory time-to-live in seconds.
+
+**LeaseClient.prototype.leaseRevoke({ id }): Promise;**
+
+> Revokes a lease. All keys attached to the lease will expire and be deleted.
+
+| Option | Type | Required | Default | Description
+|--------|------|----------|---------|------------
+| id | String | No | - | The lease ID to revoke. When the ID is revoked, all associated keys will be deleted.
+
+**LeaseClient.prototype.reconnect(): void;**
+
+> Reconnects to the next available server in RoundRobin style.
+
+**WatchClient({ endpoints, connect });**
 
 > Etcd client for communicating with VK service.
 
@@ -216,19 +283,19 @@ watcher.on("error", (err) => {
 | endpoints | String[] | No | ["127.0.0.1:2379"] | List of etc servers. Use IPs instead of DNS addresses to prevent possible process hanging.
 | connect | Boolean | No | true | Automatically connects.
 
-**KVWatch.prototype.cancel(): void;**
+**WatchClient.prototype.cancel(): void;**
 
 > Stops listening for changes but stays connected.
 
-**KVWatch.prototype.close(): void;**
+**WatchClient.prototype.close(): void;**
 
 > Closes client connection.
 
-**KVWatch.prototype.connect(): void;**
+**WatchClient.prototype.connect(): void;**
 
 > Initializes the client connection.
 
-**KVWatch.prototype.isConnected(): Boolean;**
+**WatchClient.prototype.isConnected(): Boolean;**
 
 > Returns true if the client is initialized.
 
@@ -236,11 +303,11 @@ watcher.on("error", (err) => {
 
 > Returns true if the stream is listening for changes.
 
-**KVWatch.prototype.reconnect(): void;**
+**WatchClient.prototype.reconnect(): void;**
 
 > Reconnects to the next available server in RoundRobin style.
 
-**KVWatch.prototype.watch({ key, rangeEnd, startRevision, progressNotify }): void;**
+**WatchClient.prototype.watch({ key, rangeEnd, startRevision, progressNotify }): void;**
 
 > Starts listening for changes.
 

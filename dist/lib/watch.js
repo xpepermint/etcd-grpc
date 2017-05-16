@@ -11,7 +11,6 @@ var __extends = (this && this.__extends) || (function () {
 })();
 exports.__esModule = true;
 var client_1 = require("./client");
-var object_keys_normalizer_1 = require("object-keys-normalizer");
 var WatchClient = (function (_super) {
     __extends(WatchClient, _super);
     function WatchClient(_a) {
@@ -28,8 +27,7 @@ var WatchClient = (function (_super) {
         }
         _super.prototype.connect.call(this);
         function emitEvent(name, res) {
-            var data = object_keys_normalizer_1.normalizeKeys(res, "camel");
-            this.emit(name, data);
+            this.emit(name, this.normalizeResponseObject(res));
         }
         this.stream = this.client.watch();
         this.stream.on("data", function (res) { return emitEvent.call(_this, "data", res); });
@@ -51,20 +49,18 @@ var WatchClient = (function (_super) {
         }
         this.watching = true;
         this.watchId = (parseInt(this.watchId) + 1).toString();
-        var data = object_keys_normalizer_1.normalizeKeys({
+        this.stream.write(this.normalizeRequestObject({
             createRequest: req
-        }, "snake");
-        this.stream.write(data);
+        }));
     };
     WatchClient.prototype.cancel = function () {
         if (!this.watching) {
             return;
         }
         this.watching = false;
-        var data = object_keys_normalizer_1.normalizeKeys({
+        this.stream.write(this.normalizeRequestObject({
             cancelRequest: { watchId: this.watchId }
-        }, "snake");
-        this.stream.write(data);
+        }));
     };
     WatchClient.prototype.isWatching = function () {
         return this.watching;

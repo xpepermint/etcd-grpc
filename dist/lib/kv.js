@@ -11,6 +11,15 @@ var __extends = (this && this.__extends) || (function () {
 })();
 exports.__esModule = true;
 var client_1 = require("./client");
+exports.EDGE_KEY = "\0";
+exports.NONE_SORT_ORDER = 0;
+exports.ASCEND_SORT_ORDER = 1;
+exports.DESCEND_SORT_ORDER = 2;
+exports.KEY_SORT_TARGET = 0;
+exports.VERSION_SORT_TARGET = 1;
+exports.CREATE_SORT_TARGET = 2;
+exports.MOD_SORT_TARGET = 3;
+exports.VALUE_SORT_TARGET = 4;
 var KVClient = (function (_super) {
     __extends(KVClient, _super);
     function KVClient(_a) {
@@ -25,6 +34,9 @@ var KVClient = (function (_super) {
     };
     KVClient.prototype.deleteRange = function (req) {
         return this.perform("deleteRange", req);
+    };
+    KVClient.prototype.compact = function (req) {
+        return this.perform("compact", req);
     };
     return KVClient;
 }(client_1.Client));

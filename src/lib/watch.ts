@@ -1,11 +1,84 @@
 import { Duplex } from "stream";
-
-import { Client } from "./client";
-import { normalizeKeys } from "object-keys-normalizer";
-import { IWatchCreateRequest, IWatchCancelRequest } from "./messages";
+import { Client, IEvent, IResponseHeader } from "./client";
 
 /**
- * Etcd watcher class
+ * Create watcher request interface.
+ */
+export interface IWatchCreateRequest {
+  /**
+   * The key to register for watching.
+   */
+  key?: Buffer;
+  /**
+   * The end of the range [key, rangeEnd) to watch. If rangeEnd is not
+   * given, only the key argument is watched. If rangeEnd is equal to '\0',
+   * all keys greater than or equal to the key argument are watched.
+   */
+  rangeEnd?: Buffer;
+  /**
+   * An optional revision to watch from (inclusive). No startRevision is "now".
+   */
+  startRevision?: string;
+  /**
+   * If set then the etcd server will periodically send a IWatchResponse with no
+   * events to the new watcher if there are no recent events. It is useful when
+   * clients wish to recover a disconnected watcher starting from a recent known
+   * revision. The etcd server may decide how often it will send notifications
+   * based on current load.
+   */
+  progressNotify?: boolean;
+}
+
+/**
+ * Cancel watcher request interface.
+ */
+export interface IWatchCancelRequest {
+  /**
+   * The watcher id to cancel so that no more events are transmitted.
+   */
+  watchId: string;
+}
+
+/**
+ * Watcher response interface.
+ */
+export interface IWatchResponse {
+  /**
+   * Request metadata.
+   */
+  header: IResponseHeader;
+  /**
+   * Is the ID of the watcher that corresponds to the response.
+   */
+  watchId: string;
+  /**
+   * If set to true then the response is for a create watch request. The client
+   * should record the watch_id and expect to receive events for the created watcher
+   * from the same stream. All events sent to the created watcher will attach with
+   * the same watch_id.
+   */
+  created: boolean;
+  /**
+   * If is set to true then the response is for a cancel watch request. No further
+   * events will be sent to the canceled watcher.
+   */
+  canceled: boolean;
+  /**
+   * It is set to the minimum index if a watcher tries to watch at a compacted index.
+   * This happens when creating a watcher at a compacted revision or the watcher cannot
+   * catch up with the progress of the key-value store. The client should treat the
+   * watcher as canceled and should not try to create any watcher with the same
+   * startRevision again.
+   */
+  compactRevision: string;
+  /**
+   * Events.
+   */
+  events: IEvent[];
+}
+
+/**
+ * Watcher class to listen for changes.
  */
 export class WatchClient extends Client {
   /**
@@ -43,8 +116,7 @@ export class WatchClient extends Client {
     super.connect();
 
     function emitEvent(name, res) {
-      let data = normalizeKeys(res, "camel");
-      this.emit(name, data);
+      this.emit(name, this.normalizeResponseObject(res));
     }
 
     this.stream = this.client.watch();
@@ -74,10 +146,11 @@ export class WatchClient extends Client {
     this.watching = true;
     this.watchId = (parseInt(this.watchId) + 1).toString();
 
-    const data = normalizeKeys({
-      createRequest: req,
-    }, "snake");
-    this.stream.write(data);
+    this.stream.write(
+      this.normalizeRequestObject({
+        createRequest: req,
+      })
+    );
   }
 
   /**
@@ -88,10 +161,11 @@ export class WatchClient extends Client {
 
     this.watching = false;
 
-    const data = normalizeKeys({
-      cancelRequest: { watchId: this.watchId } as IWatchCancelRequest,
-    }, "snake");
-    this.stream.write(data);
+    this.stream.write(
+      this.normalizeRequestObject({
+        cancelRequest: { watchId: this.watchId } as IWatchCancelRequest,
+      })
+    );
   }
 
   /**

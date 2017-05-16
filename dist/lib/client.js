@@ -14,14 +14,15 @@ var path = require("path");
 var grpc = require("grpc");
 var events_1 = require("events");
 var object_keys_normalizer_1 = require("object-keys-normalizer");
-exports.PROTO_FILE_PATH = path.join(__dirname, "..", "..", "proto", "rpc.proto");
+exports.PUT_EVENT_TYPE = 0;
+exports.DELETE_EVENT_TYPE = 1;
 var Client = (function (_super) {
     __extends(Client, _super);
     function Client(service, _a) {
         var _b = _a === void 0 ? {} : _a, _c = _b.endpoints, endpoints = _c === void 0 ? ["127.0.0.1:2379"] : _c, _d = _b.connect, connect = _d === void 0 ? true : _d;
         var _this = _super.call(this) || this;
         _this.service = service;
-        _this.rpc = grpc.load(exports.PROTO_FILE_PATH).etcdserverpb;
+        _this.rpc = grpc.load(path.join(__dirname, "..", "..", "proto", "rpc.proto")).etcdserverpb;
         _this.endpoints = [].concat(endpoints);
         if (connect) {
             _this.connect();
@@ -51,15 +52,31 @@ var Client = (function (_super) {
     Client.prototype.perform = function (command, req) {
         var _this = this;
         return new Promise(function (resolve, reject) {
-            _this.client[command](object_keys_normalizer_1.normalizeKeys(req, "snake"), function (err, res) {
+            _this.client[command](_this.normalizeRequestObject(req), function (err, res) {
                 if (err) {
                     reject(err);
                 }
                 else {
-                    resolve(object_keys_normalizer_1.normalizeKeys(res, "camel"));
+                    resolve(_this.normalizeResponseObject(res));
                 }
             });
         });
+    };
+    Client.prototype.normalizeRequestObject = function (req) {
+        var data = object_keys_normalizer_1.normalizeKeys(req, "snake");
+        if (data.id) {
+            data.ID = data.id;
+            delete data.id;
+        }
+        if (data.ttl) {
+            data.TTL = data.ttl;
+            delete data.ttl;
+        }
+        return data;
+    };
+    Client.prototype.normalizeResponseObject = function (req) {
+        var data = object_keys_normalizer_1.normalizeKeys(req, "camel");
+        return data;
     };
     Client.prototype.isConnected = function () {
         return !!this.client;
