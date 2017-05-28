@@ -1,14 +1,12 @@
 ![Build Status](https://travis-ci.org/xpepermint/etcd-grpc.svg?branch=master)&nbsp;[![NPM Version](https://badge.fury.io/js/etcd-grpc.svg)](https://badge.fury.io/js/etcd-grpc)&nbsp;[![Dependency Status](https://gemnasium.com/xpepermint/etcd-grpc.svg)](https://gemnasium.com/xpepermint/etcd-grpc)
 
-**WARNING: Deprecated in favor of [etcd3](https://github.com/WatchBeam/etcd3).**
-
 # [etcd](https://github.com/coreos/etcd)-[grpc](http://www.grpc.io/)
 
 > A gRPC based etcd client for NodeJS targeting etcd V3.
 
-[Etcd](https://github.com/coreos/etcd) is a distributed reliable key-value store for the most critical data of a distributed system. 
+[Etcd](https://github.com/coreos/etcd) is a distributed reliable key-value store for the most critical data of a distributed system.
 
-This NPM package provides a high performance [gRPC](http://www.grpc.io/) based promisified clients for [Etcd V3](https://github.com/coreos/etcd). It's open-source and it's written with  [TypeScript](https://www.typescriptlang.org). 
+This NPM package provides a high performance [gRPC](http://www.grpc.io/) based promisified clients for [Etcd V3](https://github.com/coreos/etcd). It's open-source and it's written with  [TypeScript](https://www.typescriptlang.org).
 
 The source code is available on [GitHub](https://github.com/xpepermint/etcd-grpc) where you can also find our [issue tracker](https://github.com/xpepermint/etcd-grpc/issues).
 
@@ -30,7 +28,7 @@ Before you start make sure that [etcd](https://github.com/coreos/etcd) is runnin
 
 ### KV Client
 
-The `KV` client provides the interface for reading, updating and deleting keys stored in `etcd`. 
+The `KV` client provides the interface for reading, updating and deleting keys stored in `etcd`.
 
 Let's start by initializing a new KV client.
 
@@ -112,7 +110,7 @@ Watcher can be paused by calling the `cancel()` method. To start watching again,
 ```ts
 watcher.cancel(); // stop watching
 watcher.watch({ // continue watching the `name` key
-  key: new Buffer("name"), 
+  key: new Buffer("name"),
 });
 ```
 
@@ -149,7 +147,7 @@ lease.leaseGrant({
 });
 ```
 
-You will find more information about this client in the API section. Note also that this client provides the same connectivity logic as the `KVClient`. 
+You will find more information about this client in the API section. Note also that this client provides the same connectivity logic as the `KVClient`.
 
 ## API
 
@@ -363,6 +361,11 @@ You will find more information about this client in the API section. Note also t
 **DELETE_EVENT_TYPE: Number**
 
 > Delete KV event type.
+
+## Related Packages
+
+* [etcd3](https://github.com/WatchBeam/etcd3)
+* [node-etcd3](https://github.com/CitySim/node-etcd3)
 
 ## License (MIT)
 
