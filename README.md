@@ -8,7 +8,7 @@
 
 This NPM package provides a high performance [gRPC](http://www.grpc.io/) based promisified clients for [Etcd V3](https://github.com/coreos/etcd). It's open-source and it's written with  [TypeScript](https://www.typescriptlang.org).
 
-The source code is available on [GitHub](https://github.com/xpepermint/etcd-grpc) where you can also find our [issue tracker](https://github.com/xpepermint/etcd-grpc/issues).
+The source code is available on [GitHub](https://github.com/xpepermint/etcd-grpc) where you can also find our [issue tracker](https://github.com/xpepermint/etcd-grpc/blob/master/issues).
 
 ## Installation
 
@@ -125,7 +125,7 @@ kv.txn({
 });
 ```
 
-There's more so please use TypeScript or check the [source files](etcd-grpc/src/lib/kv.ts).
+There's more so please use TypeScript or check the [source files](https://github.com/xpepermint/etcd-grpc/blob/master/src/lib/kv.ts).
 
 ### Watch Client
 
@@ -166,7 +166,7 @@ watcher.on("error", (err) => {
 });
 ```
 
-There's more so please use TypeScript or check the [source files](etcd-grpc/src/lib/watch.ts).
+There's more so please use TypeScript or check the [source files](https://github.com/xpepermint/etcd-grpc/blob/master/src/lib/watch.ts).
 
 ### Lease Client
 
@@ -189,7 +189,7 @@ lease.leaseGrant({
 });
 ```
 
-Note also that this client provides the same connectivity logic as the `KVClient`. There's more so please use TypeScript or check the [source files](etcd-grpc/src/lib/lease.ts).
+Note also that this client provides the same connectivity logic as the `KVClient`. There's more so please use TypeScript or check the [source files](https://github.com/xpepermint/etcd-grpc/blob/master/src/lib/lease.ts).
 
 ## Related Packages
 
