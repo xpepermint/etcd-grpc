@@ -12,30 +12,54 @@ var __extends = (this && this.__extends) || (function () {
 exports.__esModule = true;
 var client_1 = require("./client");
 exports.EDGE_KEY = "\0";
-exports.NONE_SORT_ORDER = 0;
-exports.ASCEND_SORT_ORDER = 1;
-exports.DESCEND_SORT_ORDER = 2;
-exports.KEY_SORT_TARGET = 0;
-exports.VERSION_SORT_TARGET = 1;
-exports.CREATE_SORT_TARGET = 2;
-exports.MOD_SORT_TARGET = 3;
-exports.VALUE_SORT_TARGET = 4;
+var SortOrder;
+(function (SortOrder) {
+    SortOrder[SortOrder["NONE"] = 0] = "NONE";
+    SortOrder[SortOrder["ASCEND"] = 1] = "ASCEND";
+    SortOrder[SortOrder["DESCEND"] = 2] = "DESCEND";
+})(SortOrder = exports.SortOrder || (exports.SortOrder = {}));
+var SortTarget;
+(function (SortTarget) {
+    SortTarget[SortTarget["KEY"] = 0] = "KEY";
+    SortTarget[SortTarget["VERSION"] = 1] = "VERSION";
+    SortTarget[SortTarget["CREATE"] = 2] = "CREATE";
+    SortTarget[SortTarget["MOD"] = 3] = "MOD";
+    SortTarget[SortTarget["VALUE"] = 4] = "VALUE";
+})(SortTarget = exports.SortTarget || (exports.SortTarget = {}));
+var CompareResult;
+(function (CompareResult) {
+    CompareResult[CompareResult["EQUAL"] = 0] = "EQUAL";
+    CompareResult[CompareResult["GREATER"] = 1] = "GREATER";
+    CompareResult[CompareResult["LESS"] = 2] = "LESS";
+    CompareResult[CompareResult["NOT_EQUAL"] = 3] = "NOT_EQUAL";
+})(CompareResult = exports.CompareResult || (exports.CompareResult = {}));
+var CompareTarget;
+(function (CompareTarget) {
+    CompareTarget[CompareTarget["VERSION"] = 0] = "VERSION";
+    CompareTarget[CompareTarget["CREATE"] = 1] = "CREATE";
+    CompareTarget[CompareTarget["MOD"] = 2] = "MOD";
+    CompareTarget[CompareTarget["VALUE"] = 3] = "VALUE";
+})(CompareTarget = exports.CompareTarget || (exports.CompareTarget = {}));
 var KVClient = (function (_super) {
     __extends(KVClient, _super);
     function KVClient(_a) {
         var _b = _a === void 0 ? {} : _a, _c = _b.endpoints, endpoints = _c === void 0 ? ["127.0.0.1:2379"] : _c, _d = _b.connect, connect = _d === void 0 ? true : _d;
         return _super.call(this, "KV", { endpoints: endpoints, connect: connect }) || this;
     }
-    KVClient.prototype.range = function (req) {
-        return this.perform("range", req);
-    };
     KVClient.prototype.put = function (req) {
         return this.perform("put", req);
+    };
+    KVClient.prototype.range = function (req) {
+        return this.perform("range", req);
     };
     KVClient.prototype.deleteRange = function (req) {
         return this.perform("deleteRange", req);
     };
+    KVClient.prototype.txn = function (req) {
+        return this.perform("txn", req);
+    };
     KVClient.prototype.compact = function (req) {
+        if (req === void 0) { req = {}; }
         return this.perform("compact", req);
     };
     return KVClient;

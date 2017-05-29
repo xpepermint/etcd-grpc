@@ -6,38 +6,33 @@ import { Client, IKeyValue, IResponseHeader } from "./client";
 export const EDGE_KEY = "\0";
 
 /**
- * No sorting (default).
+ * Available values sort order.
  */
-export const NONE_SORT_ORDER = 0;
-/**
- * Lowest target value first.
- */
-export const ASCEND_SORT_ORDER = 1;
-/**
- * Highest target value first.
- */
-export const DESCEND_SORT_ORDER = 2;
+export enum SortOrder {
+  /**
+   * Default, no sorting.
+   */
+  NONE = 0,
+  /**
+   * Lowest target value first.
+   */
+  ASCEND = 1,
+  /**
+   * Highest target value first.
+   */
+  DESCEND = 2,
+}
 
 /**
- * Key name.
+ * Available values sort target kind.
  */
-export const KEY_SORT_TARGET = 0;
-/**
- * Version number.
- */
-export const VERSION_SORT_TARGET = 1;
-/**
- * Created index.
- */
-export const CREATE_SORT_TARGET = 2;
-/**
- * Modified index.
- */
-export const MOD_SORT_TARGET = 3;
-/**
- * Key value.
- */
-export const VALUE_SORT_TARGET = 4;
+export enum SortTarget {
+  KEY = 0,
+  VERSION = 1,
+  CREATE = 2,
+  MOD = 3,
+  VALUE = 4,
+}
 
 /**
  * Range request interface.
@@ -69,11 +64,11 @@ export interface IRangeRequest {
   /**
    * The order for returned sorted results.
    */
-  sortOrder?: 0 | 1 | 2;
+  sortOrder?: SortOrder;
   /**
    * The key-value field to use for sorting.
    */
-  sortTarget?: 0 | 1 | 2 | 3 | 4;
+  sortTarget?: SortTarget;
   /**
    * Sets the range request to use serializable member-local reads. Range requests
    * are linearizable by default; linearizable requests have higher latency and lower
@@ -185,7 +180,7 @@ export interface ICompactionRequest {
    */
   revision?: string | number;
   /**
-   * When set the RPC will wait until the compaction is physically applied to the local
+   * When true the RPC will wait until the compaction is physically applied to the local
    * database such that compacted entries are totally removed from the backend database.
    */
   physical?: boolean;
@@ -199,6 +194,135 @@ export interface ICompactionResponse {
    * Request metadata.
    */
   header: IResponseHeader;
+}
+
+/**
+ * Transaction request interface.
+ * 
+ * The implementation hinges around a powerful primitive which we call MultiOp. All
+ * other database operations except for iteration are implemented as a single call to
+ * MultiOp. A MultiOp is applied atomically and consists of three components:
+ *
+ * 1. A list of tests called guard. Each test in guard checks a single entry in the
+ *    database. It may check for the absence or presence of a value, or compare with
+ *    a given value. Two different tests in the guard may apply to the same or different
+ *    entries in the database. All tests in the guard are applied and MultiOp returns
+ *    the results. If all tests are true, MultiOp executes t op (see item 2 below),
+ *    otherwise it executes f op (see item 3 below).
+ * 2. A list of database operations called t op. Each operation in the list is either an
+ *    insert, delete, or lookup operation, and applies to a single database entry. Two
+ *    different operations in the list may apply to the same or different entries in the
+ *    database. These operations are executed if guard evaluates to true.
+ * 3. A list of database operations called f op. Like t op, but executed if guard
+ *    evaluates to false.
+ */
+export interface ITxnRequest {
+  /**
+   * A list of predicates representing a conjunction of terms. If the comparisons succeed,
+   * then the success requests will be processed in order, and the response will contain
+   * their respective responses in order. If the comparisons fail, then the failure
+   * requests will be processed in order, and the response will contain their respective
+   * responses in order.
+   */
+  compare: ICompare | ICompare[];
+  /**
+   * A list of requests which will be applied when compare evaluates to true.
+   */
+  success: IRequestOp | IRequestOp[];
+  /**
+   * A list of requests which will be applied when compare evaluates to false.
+   */
+  failure: IRequestOp | IRequestOp[];
+}
+
+/**
+ * Transaction response interface.
+ */
+export interface ITxnResponse {
+  /**
+   * Request metadata.
+   */
+  header: IResponseHeader;
+  /**
+   * Set to true if the compare evaluated to true or false otherwise.
+   */
+  succeeded: boolean;
+  /**
+   * A list of responses corresponding to the results from applying success if
+   * succeeded is true or failure if succeeded is false.
+   */
+  responses: IResponseOp[];
+}
+
+/**
+ * Request operation interface (e.g. for transaction).
+ */
+export interface IRequestOp {
+  requestRange?: IRangeRequest;
+  requestPut?: IPutRequest;
+  requestDeleteRange?: IDeleteRangeRequest;
+}
+/**
+ * Response operation interface (e.g. for transaction).
+ */
+export interface IResponseOp {
+  responseRange: IRangeResponse;
+  responsePut: IPutResponse;
+  responseDeleteRange: IDeleteRangeResponse;
+}
+
+/**
+ * Available logical comparison operations.
+ */
+export enum CompareResult {
+  EQUAL = 0,
+  GREATER = 1,
+  LESS = 2,
+  NOT_EQUAL = 3,
+}
+
+/**
+ * Available options for a key-value field to inspect for the comparison.
+ */
+export enum CompareTarget {
+  VERSION = 0,
+  CREATE = 1,
+  MOD = 2,
+  VALUE = 3,
+}
+
+/**
+ * Compare interface.
+ */
+export interface ICompare {
+  /**
+   * A logical comparison operation.
+   */
+  result?: CompareResult;
+  /**
+   * The key-value field to inspect for the comparison.
+   */
+  target?: CompareTarget;
+  /**
+   * The subject key for the comparison operation.
+   */
+  key?: Buffer;
+  /**
+   * The version of the given key
+   */
+  version?: string | number;
+  /**
+   * The creation revision of the given key
+   */
+  createRevision?: string | number;
+  /**
+   * The last modified revision of the given key.
+   */
+  modRevision?: string | number;
+  /**
+   * The value of the given key, in bytes.
+   */
+  value?: Buffer;
 }
 
 /**
@@ -219,18 +343,18 @@ export class KVClient extends Client {
   }
 
   /**
-   * Gets the keys in the range from the key-value store.
-   */
-  public range(req: IRangeRequest): Promise<IRangeResponse> {
-    return this.perform("range", req);
-  }
-
-  /**
    * Puts the given key into the key-value store. A put request increments the
    * revision of the key-value store and generates one event in the event history.
    */
   public put(req: IPutRequest): Promise<IPutResponse> {
     return this.perform("put", req);
+  }
+
+  /**
+   * Gets the keys in the range from the key-value store.
+   */
+  public range(req: IRangeRequest): Promise<IRangeResponse> {
+    return this.perform("range", req);
   }
 
   /**
@@ -247,7 +371,16 @@ export class KVClient extends Client {
    * should be periodically compacted or the event history will continue to grow
    * indefinitely.
    */
-  public compact(req: ICompactionRequest): Promise<ICompactionResponse> {
+  public txn(req: ITxnRequest): Promise<ITxnResponse> {
+    return this.perform("txn", req);
+  }
+
+  /**
+   * Compacts the event history in the etcd key-value store. The key-value store
+   * should be periodically compacted or the event history will continue to grow
+   * indefinitely.
+   */
+  public compact(req: ICompactionRequest = {}): Promise<ICompactionResponse> {
     return this.perform("compact", req);
   }
 }

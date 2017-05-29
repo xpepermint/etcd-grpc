@@ -108,8 +108,89 @@ ava_1["default"].serial("method `deleteRange` removes the key", function (t) { r
         }
     });
 }); });
-ava_1["default"]("method throws when no connection", function (t) { return __awaiter(_this, void 0, void 0, function () {
-    var kv, e_1;
+ava_1["default"].serial("method `txn` executes operations in transaction", function (t) { return __awaiter(_this, void 0, void 0, function () {
+    var kv, res, e_1;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                kv = new __1.KVClient({
+                    endpoints: ["127.0.0.1:7891", "127.0.0.1:2379"]
+                });
+                kv.reconnect();
+                _a.label = 1;
+            case 1:
+                _a.trys.push([1, 4, , 5]);
+                return [4, kv.put({
+                        key: new Buffer("name"),
+                        value: new Buffer("")
+                    })];
+            case 2:
+                _a.sent();
+                return [4, Promise.all([0, 1].map(function () {
+                        return kv.txn({
+                            compare: {
+                                result: 0,
+                                target: 3,
+                                key: new Buffer("name"),
+                                value: new Buffer("foo")
+                            },
+                            success: [{
+                                    requestPut: {
+                                        key: new Buffer("name"),
+                                        value: new Buffer("bar")
+                                    }
+                                }],
+                            failure: [{
+                                    requestPut: {
+                                        key: new Buffer("name"),
+                                        value: new Buffer("foo")
+                                    }
+                                }]
+                        });
+                    }))];
+            case 3:
+                res = _a.sent();
+                t.is(res[0].succeeded, false);
+                t.is(res[1].succeeded, true);
+                t.pass();
+                return [3, 5];
+            case 4:
+                e_1 = _a.sent();
+                t.fail();
+                return [3, 5];
+            case 5: return [2];
+        }
+    });
+}); });
+ava_1["default"].serial("method `compact` compacts etcd key-value store", function (t) { return __awaiter(_this, void 0, void 0, function () {
+    var kv, res, e_2;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                kv = new __1.KVClient();
+                _a.label = 1;
+            case 1:
+                _a.trys.push([1, 3, , 4]);
+                return [4, kv.compact()];
+            case 2:
+                res = _a.sent();
+                t.deepEqual(Object.keys(res.header), ["clusterId", "memberId", "revision", "raftTerm"]);
+                return [3, 4];
+            case 3:
+                e_2 = _a.sent();
+                if (e_2.message === "etcdserver: mvcc: required revision has been compacted") {
+                    t.pass();
+                }
+                else {
+                    throw e_2;
+                }
+                return [3, 4];
+            case 4: return [2];
+        }
+    });
+}); });
+ava_1["default"].serial("method throws when no connection", function (t) { return __awaiter(_this, void 0, void 0, function () {
+    var kv, e_3;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -127,15 +208,15 @@ ava_1["default"]("method throws when no connection", function (t) { return __awa
                 t.fail();
                 return [3, 4];
             case 3:
-                e_1 = _a.sent();
-                t.is(__1.getErrorKind(e_1) === "CONNECTION_FAILED", true);
+                e_3 = _a.sent();
+                t.is(__1.getErrorKind(e_3) === __1.ErrorKind.CONNECTION_FAILED, true);
                 return [3, 4];
             case 4: return [2];
         }
     });
 }); });
-ava_1["default"]("method `reconnect` connects to the next available endpoint", function (t) { return __awaiter(_this, void 0, void 0, function () {
-    var kv, e_2;
+ava_1["default"].serial("method `reconnect` connects to the next available endpoint", function (t) { return __awaiter(_this, void 0, void 0, function () {
+    var kv, e_4;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -154,7 +235,7 @@ ava_1["default"]("method `reconnect` connects to the next available endpoint", f
                 t.pass();
                 return [3, 4];
             case 3:
-                e_2 = _a.sent();
+                e_4 = _a.sent();
                 t.fail();
                 return [3, 4];
             case 4: return [2];

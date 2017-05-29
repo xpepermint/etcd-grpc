@@ -22,7 +22,7 @@ ava_1["default"].cb("throws error when no connection", function (t) {
         key: new Buffer(__1.EDGE_KEY)
     });
     watcher.on("error", function (e) {
-        t.is(__1.getErrorKind(e) === "CONNECTION_FAILED", true);
+        t.is(__1.getErrorKind(e) === __1.ErrorKind.CONNECTION_FAILED, true);
         t.end();
     });
 });
@@ -31,7 +31,7 @@ ava_1["default"].cb("method `reconnect` connects to the next available endpoint"
         endpoints: ["127.0.0.1:7891", "127.0.0.1:2379"]
     });
     watcher.on("error", function (e) {
-        t.is(__1.getErrorKind(e) === "CONNECTION_FAILED", true);
+        t.is(__1.getErrorKind(e) === __1.ErrorKind.CONNECTION_FAILED, true);
         watcher.reconnect();
         watcher.watch({
             key: new Buffer(__1.EDGE_KEY)

@@ -1,21 +1,25 @@
 /// <reference types="node" />
 import { Client, IKeyValue, IResponseHeader } from "./client";
 export declare const EDGE_KEY = "\0";
-export declare const NONE_SORT_ORDER = 0;
-export declare const ASCEND_SORT_ORDER = 1;
-export declare const DESCEND_SORT_ORDER = 2;
-export declare const KEY_SORT_TARGET = 0;
-export declare const VERSION_SORT_TARGET = 1;
-export declare const CREATE_SORT_TARGET = 2;
-export declare const MOD_SORT_TARGET = 3;
-export declare const VALUE_SORT_TARGET = 4;
+export declare enum SortOrder {
+    NONE = 0,
+    ASCEND = 1,
+    DESCEND = 2,
+}
+export declare enum SortTarget {
+    KEY = 0,
+    VERSION = 1,
+    CREATE = 2,
+    MOD = 3,
+    VALUE = 4,
+}
 export interface IRangeRequest {
     key: Buffer;
     rangeEnd?: Buffer;
     limit?: number;
     revision?: number;
-    sortOrder?: 0 | 1 | 2;
-    sortTarget?: 0 | 1 | 2 | 3 | 4;
+    sortOrder?: SortOrder;
+    sortTarget?: SortTarget;
     serializable?: boolean;
     keysOnly?: boolean;
     countOnly?: boolean;
@@ -49,13 +53,55 @@ export interface ICompactionRequest {
 export interface ICompactionResponse {
     header: IResponseHeader;
 }
+export interface ITxnRequest {
+    compare: ICompare | ICompare[];
+    success: IRequestOp | IRequestOp[];
+    failure: IRequestOp | IRequestOp[];
+}
+export interface ITxnResponse {
+    header: IResponseHeader;
+    succeeded: boolean;
+    responses: IResponseOp[];
+}
+export interface IRequestOp {
+    requestRange?: IRangeRequest;
+    requestPut?: IPutRequest;
+    requestDeleteRange?: IDeleteRangeRequest;
+}
+export interface IResponseOp {
+    responseRange: IRangeResponse;
+    responsePut: IPutResponse;
+    responseDeleteRange: IDeleteRangeResponse;
+}
+export declare enum CompareResult {
+    EQUAL = 0,
+    GREATER = 1,
+    LESS = 2,
+    NOT_EQUAL = 3,
+}
+export declare enum CompareTarget {
+    VERSION = 0,
+    CREATE = 1,
+    MOD = 2,
+    VALUE = 3,
+}
+export interface ICompare {
+    result?: CompareResult;
+    target?: CompareTarget;
+    key?: Buffer;
+    version?: string | number;
+    createRevision?: string | number;
+    modRevision?: string | number;
+    value?: Buffer;
+}
 export declare class KVClient extends Client {
     constructor({endpoints, connect}?: {
         endpoints?: string[];
         connect?: boolean;
     });
-    range(req: IRangeRequest): Promise<IRangeResponse>;
     put(req: IPutRequest): Promise<IPutResponse>;
+    range(req: IRangeRequest): Promise<IRangeResponse>;
     deleteRange(req: IDeleteRangeRequest): Promise<IDeleteRangeResponse>;
-    compact(req: ICompactionRequest): Promise<ICompactionResponse>;
+    txn(req: ITxnRequest): Promise<ITxnResponse>;
+    compact(req?: ICompactionRequest): Promise<ICompactionResponse>;
 }

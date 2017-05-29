@@ -4,15 +4,6 @@ import { EventEmitter } from "events";
 import { normalizeKeys } from "object-keys-normalizer";
 
 /**
- * Put KV event type.
- */
-export const PUT_EVENT_TYPE = 0;
-/**
- * Delete KV event type.
- */
-export const DELETE_EVENT_TYPE = 1;
-
-/**
  * Key value interface.
  */
 export interface IKeyValue {
@@ -46,6 +37,20 @@ export interface IKeyValue {
 }
 
 /**
+ * Available values for event type.
+ */
+export enum EventType {
+  /**
+   * Filter out put event.
+   */
+  PUT = 0,
+  /**
+   * Filter out delete event.
+   */
+  DELETE = 1,
+}
+
+/**
  * Event interface.
  */
 export interface IEvent {
@@ -53,7 +58,7 @@ export interface IEvent {
    * The kind of event. If type is a PUT, it indicates new data has been stored to the
    * key. If type is a DELETE, it indicates the key was deleted.
    */
-  type: 0 | 1;
+  type: EventType;
   /**
    * Holds the KeyValue for the event. A PUT event contains current kv pair. A PUT event
    * with kv.Version=1 indicates the creation of a key. A DELETE/EXPIRE event contains

@@ -20,7 +20,7 @@ npm install --save etcd-grpc
 
 ## Getting Started
 
-Before you start make sure that [etcd](https://github.com/coreos/etcd) is running on your local machine. Code snippets expect that [etcd](https://github.com/coreos/etcd) is listening locally on the default port `2379`. To make the code as clean as possible, the examples are written in [TypeScript](https://www.typescriptlang.org/).
+Before you start make sure that [etcd](https://github.com/coreos/etcd) is running on your local machine. Code snippets below expect that [etcd](https://github.com/coreos/etcd) is listening locally on the default port `2379`. To make the code clean, the examples are written in [TypeScript](https://www.typescriptlang.org/).
 
 ### Initialization
 
@@ -28,9 +28,7 @@ Before you start make sure that [etcd](https://github.com/coreos/etcd) is runnin
 
 ### KV Client
 
-The `KV` client provides the interface for reading, updating and deleting keys stored in `etcd`.
-
-Let's start by initializing a new KV client.
+The `KV` client provides the interface for reading, updating and deleting keys stored in `etcd`. You start by initializing a new KV client.
 
 ```ts
 import { KVClient } from "etcd-grpc";
@@ -38,7 +36,7 @@ import { KVClient } from "etcd-grpc";
 const kv = new KVClient();
 ```
 
-We can now set the `name` key with value `John` as show below. Note that key name and value must be a `Buffer`.
+We can now set the `name` key with value `John` as show below. Note that `key` and `value` must be of type `Buffer`.
 
 ```ts
 kv.put({
@@ -49,13 +47,13 @@ kv.put({
 });
 ```
 
-The connection to the `etcd` server will sometimes fail thus the performing commands will fail. A command will throw an error in case of connectivity problem which we can catch and try to reconnect manually.
+The connection to the `etcd` server will sometimes fail thus the performing commands will fail. A command will throw an error in case of connectivity problem which we can catch and then try to reconnect manually.
 
 ```ts
-import { getErrorKind } from "etcd-grpc";
+import { getErrorKind, ErrorKind } from "etcd-grpc";
 
 promise.catch((err) => {
-  if (getErrorKind(err) === "CONNECTION_FAILED") {
+  if (getErrorKind(err) === ErrorKind.CONNECTION_FAILED) {
     kv.reconnect(); // reconnect to the next available endpoint (round-robin style)
   } else {
     throw err;
@@ -63,13 +61,26 @@ promise.catch((err) => {
 });
 ```
 
-Note that when targeting the server using the DNS, the service can hang forever if the address can not be resolved. It's better to use the IP as your enpoint address because the connectivity problem will be handled by throwing an error as explained.
+When targeting the server using DNS, the service, in some cases, can hang forever if the address can not be resolved. Use IP address as your enpoint address instead, because the connectivity problem will be handled by throwing an error as explained.
 
 We can read one or many keys from the server using the `range` method. In the following example we retrieve a single key `name`.
 
 ```ts
 kv.range({
   key: new Buffer("name"),
+}).then((res) => {
+  console.log(res);
+});
+```
+
+Etcd stores keys in a sequence. By using a special character `\0` we can target the first or the last key in the store. The following example returns all keys in the etcd store.
+
+```ts
+import { EDGE_KEY } from "etcd-grpc";
+
+kv.range({
+  key: new Buffer(EDGE_KEY), // first key
+  rangeEnd: new Buffer(EDGE_KEY), // last key
 }).then((res) => {
   console.log(res);
 });
@@ -85,7 +96,36 @@ kv.rangeDelete({
 });
 ```
 
-Please check the API section for more.
+We can also perform multiple operations in transaction using the `txn` method. The following example sets the `name` key to `bar` if that key already exists with a value set to `foo`.
+
+```js
+import { CompareResult, CompareTarget } from "etcd-grpc";
+
+kv.txn({
+  compare: {
+    result: CompareResult.EQUAL, // must be equal to
+    target: CompareTarget.VALUE, // check the value
+    key: new Buffer("name"), // key name
+    value: new Buffer("foo"), // key value
+  },
+  success: [{ // run these operations if the `compare` successeeds
+    requestPut: {
+      key: new Buffer("name"),
+      value: new Buffer("bar"),
+    }
+  }],
+  failure: [{ // run these operations if the `compare` fails
+    requestPut: {
+      key: new Buffer("name"),
+      value: new Buffer("foo"),
+    }
+  }],
+}).then((res) => {
+  console.log(res);
+});
+```
+
+There's more so please use TypeScript or check the [source files](etcd-grpc/src/lib/kv.ts).
 
 ### Watch Client
 
@@ -117,14 +157,16 @@ watcher.watch({ // continue watching the `name` key
 Watcher also provides the `reconnect()` method which we can use in case of conectivity problems. The method will try to reconnect to the next available endpoint.
 
 ```ts
-import { getErrorKind } from "etcd-grpc";
+import { getErrorKind, ErrorKind } from "etcd-grpc";
 
 watcher.on("error", (err) => {
-  if (getErrorKind(err) === "CONNECTION_FAILED") {
+  if (getErrorKind(err) === ErrorKind.CONNECTION_FAILED) {
     watcher.reconnect();
   }
 });
 ```
+
+There's more so please use TypeScript or check the [source files](etcd-grpc/src/lib/watch.ts).
 
 ### Lease Client
 
@@ -147,220 +189,7 @@ lease.leaseGrant({
 });
 ```
 
-You will find more information about this client in the API section. Note also that this client provides the same connectivity logic as the `KVClient`.
-
-## API
-
-### Classes & Methods
-
-**getErrorKind(err): String;**
-
-> Returns the kind of the provided error.
-
-| Option | Type | Required | Default | Description
-|--------|------|----------|---------|------------
-| err | Error | Yes | - | Etcd/gRPC error.
-
-**KVClient({ endpoints, connect });**
-
-> Etcd client for communicating with VK service.
-
-| Option | Type | Required | Default | Description
-|--------|------|----------|---------|------------
-| endpoints | String[] | No | ["127.0.0.1:2379"] | List of etc servers. Use IPs instead of DNS addresses to prevent possible process hanging.
-| connect | Boolean | No | true | Automatically connects.
-
-**KVClient.prototype.close(): void;**
-
-> Closes client connection.
-
-**KVClient.prototype.connect(): void;**
-
-> Initializes the client connection.
-
-**KVClient.prototype.compact({ revision, physical }): Promise;**
-
-> Compacts the event history in the etcd key-value store. The key-value store should be periodically compacted or the event history will continue to grow indefinitely.
-
-| Option | Type | Required | Default | Description
-|--------|------|----------|---------|------------
-| revision | String,Number | No | - | The key-value store revision for the compaction operation.
-| physical | Boolean | No | false | When true the RPC will wait until the compaction is physically applied to the local database such that compacted entries are totally removed from the backend database.
-
-**KVClient.prototype.deleteRange({ key, value }): Promise;**
-
-> Deletes the given range from the key-value store. A delete request increments the revision of the key-value store and generates a delete event in the event history for every deleted key.
-
-| Option | Type | Required | Default | Description
-|--------|------|----------|---------|------------
-| key | Buffer | Yes | - | The first key to delete in the range.
-| rangeEnd | Buffer | No | - | The key following the last key to delete for the range [key, rangeEnd). If rangeEnd is not given, the range is defined to contain only the key argument. If rangeEnd is '\0', the range is all keys greater than or equal to the key argument.
-
-**KVClient.prototype.isConnected(): Boolean;**
-
-> Returns true if the client is initialized.
-
-**KVClient.prototype.put({ key, value }): Promise;**
-
-> Puts the given key into the key-value store. A put request increments the revision of the key-value store and generates one event in the event history.
-
-| Option | Type | Required | Default | Description
-|--------|------|----------|---------|------------
-| key | Buffer | Yes | - | The key, in bytes, to put into the key-value store.
-| value | Buffer | Yes | - | The value, in bytes, to associate with the key in the key-value store.
-| lease | String | No | - | The lease ID to associate with the key in the key-value store. A lease value of 0 indicates no lease.
-
-**KVClient.prototype.range({ key, rangeEnd, limit, revision, sortOrder, sortTarget, serializable, keysOnly, countOnly }): Promise;**
-
-> Gets the keys in the range from the key-value store.
-
-| Option | Type | Required | Default | Description
-|--------|------|----------|---------|------------
-| key | Buffer | Yes | - | The first key for the range. If it is not given, the request only looks up key.
-| rangeEnd | Buffer | No | - | The upper bound on the requested range [key, rangeEnd). If rangeEnd is '\0', the range is all keys >= key. If the rangeEnd is one bit larger than the given key, then the range requests get the all keys with the prefix (the given key). If both key and rangeEnd are '\0', then range requests returns all keys.
-| limit | Number | No | - | A limit on the number of keys returned for the request.
-| revision | Buffer | No | - | The point-in-time of the key-value store to use for the range. If revision is less or equal to zero, the range is over the newest key-value store. If the revision has been compacted, ErrCompacted is returned as a response.
-| sortOrder | Number | No | - | The order for returned sorted results.
-| sortTarget | Number | No | 0 | The key-value field to use for sorting.
-| serializable | Boolean | No | false | Sets the range request to use serializable member-local reads. Range requests are linearizable by default; linearizable requests have higher latency and lower throughput than serializable requests but reflect the current consensus of the cluster. For better performance, in exchange for possible stale reads, a serializable range request is served locally without needing to reach consensus with other nodes in the cluster.
-| keysOnly | Boolean | No | false | When set returns only the keys and not the values.
-| countOnly | Boolean | No | false | When set returns only the count of the keys in the range.
-
-**KVClient.prototype.reconnect(): void;**
-
-> Reconnects to the next available server in RoundRobin style.
-
-**LeaseClient({ endpoints, connect });**
-
-> Etcd client for managing keys TTL.
-
-| Option | Type | Required | Default | Description
-|--------|------|----------|---------|------------
-| endpoints | String[] | No | ["127.0.0.1:2379"] | List of etc servers. Use IPs instead of DNS addresses to prevent possible process hanging.
-| connect | Boolean | No | true | Automatically connects.
-
-**LeaseClient.prototype.close(): void;**
-
-> Closes client connection.
-
-**LeaseClient.prototype.connect(): void;**
-
-> Initializes the client connection.
-
-**LeaseClient.prototype.isConnected(): Boolean;**
-
-> Returns true if the client is initialized.
-
-**LeaseClient.prototype.leaseGrant({ id, ttl }): Promise;**
-
-> Creates a lease which expires if the server does not receive a keepAlive within a given time to live period. All keys attached to the lease will be expired and deleted if the lease expires. Each expired key generates a delete event in the event history.
-
-| Option | Type | Required | Default | Description
-|--------|------|----------|---------|------------
-| id | String | No | - | The requested ID for the lease. If ID is set to 0, the lessor chooses an ID.
-| ttl | Number | No | 2 | The advisory time-to-live in seconds.
-
-**LeaseClient.prototype.leaseRevoke({ id }): Promise;**
-
-> Revokes a lease. All keys attached to the lease will expire and be deleted.
-
-| Option | Type | Required | Default | Description
-|--------|------|----------|---------|------------
-| id | String | No | - | The lease ID to revoke. When the ID is revoked, all associated keys will be deleted.
-
-**LeaseClient.prototype.reconnect(): void;**
-
-> Reconnects to the next available server in RoundRobin style.
-
-**WatchClient({ endpoints, connect });**
-
-> Etcd client for communicating with VK service.
-
-| Option | Type | Required | Default | Description
-|--------|------|----------|---------|------------
-| endpoints | String[] | No | ["127.0.0.1:2379"] | List of etc servers. Use IPs instead of DNS addresses to prevent possible process hanging.
-| connect | Boolean | No | true | Automatically connects.
-
-**WatchClient.prototype.cancel(): void;**
-
-> Stops listening for changes but stays connected.
-
-**WatchClient.prototype.close(): void;**
-
-> Closes client connection.
-
-**WatchClient.prototype.connect(): void;**
-
-> Initializes the client connection.
-
-**WatchClient.prototype.isConnected(): Boolean;**
-
-> Returns true if the client is initialized.
-
-**KVClient.prototype.isWatching(): Boolean;**
-
-> Returns true if the stream is listening for changes.
-
-**WatchClient.prototype.reconnect(): void;**
-
-> Reconnects to the next available server in RoundRobin style.
-
-**WatchClient.prototype.watch({ key, rangeEnd, startRevision, progressNotify }): void;**
-
-> Starts listening for changes.
-
-| Option | Type | Required | Default | Description
-|--------|------|----------|---------|------------
-| key | Buffer | No | - | The key to register for watching.
-| rangeEnd | Buffer | No | - | The end of the range [key, rangeEnd) to watch. If rangeEnd is not given, only the key argument is watched. If rangeEnd is equal to '\0', all keys greater than or equal to the key argument are watched.
-| startRevision | String | No | - | An optional revision to watch from (inclusive). No startRevision is "now".
-| progressNotify | Boolean | No | - | If set then the etcd server will periodically send a IWatchResponse with no events to the new watcher if there are no recent events. It is useful when clients wish to recover a disconnected watcher starting from a recent known revision. The etcd server may decide how often it will send notifications based on current load.
-
-### Constants
-
-**EDGE_KEY: String**
-
-> First or last key.
-
-**NONE_SORT_ORDER: Number**
-
-> No sorting (default).
-
-**ASCEND_SORT_ORDER: Number**
-
-> Lowest target value first.
-
-**DESCEND_SORT_ORDER: Number**
-
-> Highest target value first.
-
-**KEY_SORT_TARGET: Number**
-
-> Key name sort target.
-
-**VERSION_SORT_TARGET: Number**
-
-> Version sort target.
-
-**CREATE_SORT_TARGET: Number**
-
-> Created index sort target.
-
-**MOD_SORT_TARGET: Number**
-
-> Modified index sort target.
-
-**VALUE_SORT_TARGET: Number**
-
-> Key value sort target.
-
-**PUT_EVENT_TYPE: Number**
-
-> Put KV event type.
-
-**DELETE_EVENT_TYPE: Number**
-
-> Delete KV event type.
+Note also that this client provides the same connectivity logic as the `KVClient`. There's more so please use TypeScript or check the [source files](etcd-grpc/src/lib/lease.ts).
 
 ## Related Packages
 

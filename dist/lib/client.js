@@ -14,8 +14,11 @@ var path = require("path");
 var grpc = require("grpc");
 var events_1 = require("events");
 var object_keys_normalizer_1 = require("object-keys-normalizer");
-exports.PUT_EVENT_TYPE = 0;
-exports.DELETE_EVENT_TYPE = 1;
+var EventType;
+(function (EventType) {
+    EventType[EventType["PUT"] = 0] = "PUT";
+    EventType[EventType["DELETE"] = 1] = "DELETE";
+})(EventType = exports.EventType || (exports.EventType = {}));
 var Client = (function (_super) {
     __extends(Client, _super);
     function Client(service, _a) {

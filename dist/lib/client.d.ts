@@ -1,7 +1,5 @@
 /// <reference types="node" />
 import { EventEmitter } from "events";
-export declare const PUT_EVENT_TYPE = 0;
-export declare const DELETE_EVENT_TYPE = 1;
 export interface IKeyValue {
     key: Buffer;
     createRevision: number;
@@ -10,8 +8,12 @@ export interface IKeyValue {
     value: Buffer;
     lease: string;
 }
+export declare enum EventType {
+    PUT = 0,
+    DELETE = 1,
+}
 export interface IEvent {
-    type: 0 | 1;
+    type: EventType;
     kv: IKeyValue;
     prevKv: IKeyValue;
 }
