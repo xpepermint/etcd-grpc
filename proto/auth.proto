@@ -1,9 +1,5 @@
 syntax = "proto3";
-
 package authpb;
-
-option java_multiple_files = true;
-option java_package = "com.coreos.jetcd.api";
 
 // User is a single entry in the bucket authUsers
 message User {
@@ -11,7 +7,6 @@ message User {
   bytes password = 2;
   repeated string roles = 3;
 }
-
 // Permission is a single entity
 message Permission {
   enum Type {
@@ -20,14 +15,11 @@ message Permission {
     READWRITE = 2;
   }
   Type permType = 1;
-
   bytes key = 2;
   bytes range_end = 3;
 }
-
 // Role is a single entry in the bucket authRoles
 message Role {
   bytes name = 1;
-
   repeated Permission keyPermission = 2;
 }

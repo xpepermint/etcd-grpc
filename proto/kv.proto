@@ -1,9 +1,5 @@
 syntax = "proto3";
-
 package mvccpb;
-
-option java_multiple_files = true;
-option java_package = "com.coreos.jetcd.api";
 
 message KeyValue {
   // key is the key in bytes. An empty key is not allowed.
@@ -23,7 +19,6 @@ message KeyValue {
   // If lease is 0, then no lease is attached to the key.
   int64 lease = 6;
 }
-
 message Event {
   enum EventType {
     PUT = 0;
@@ -39,7 +34,6 @@ message Event {
   // A DELETE/EXPIRE event contains the deleted key with
   // its modification revision set to the revision of deletion.
   KeyValue kv = 2;
-
   // prev_kv holds the key-value pair before the event happens.
   KeyValue prev_kv = 3;
 }

@@ -73,7 +73,7 @@ kv.range({
 });
 ```
 
-There are some parts of etcd that could represent an endless source of confusion. Etcd stores keys in a sequence and there is a special key named `\0` which you can use to target the first or the last key in the store. 
+There are some parts of etcd that could represent an endless source of confusion. Etcd stores keys in a sequence and there is a special key named `\0` which you can use to target the first or the last key in the store.
 
 ```ts
 kv.range({
@@ -187,8 +187,8 @@ import { LeaseClient } from "etcd-grpc";
 const lease = new LeaseClient();
 
 lease.leaseGrant({
-  TTL: 5,
-  ID: 100
+  ttl: 5,
+  id: 100
 }).then(({ id }) => {
   return kv.put({
     key: new Buffer("name"),
