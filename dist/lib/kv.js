@@ -11,7 +11,6 @@ var __extends = (this && this.__extends) || (function () {
 })();
 exports.__esModule = true;
 var client_1 = require("./client");
-exports.EDGE_KEY = "\0";
 var SortOrder;
 (function (SortOrder) {
     SortOrder[SortOrder["NONE"] = 0] = "NONE";

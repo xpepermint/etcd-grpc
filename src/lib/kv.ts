@@ -1,11 +1,6 @@
 import { Client, IKeyValue, IResponseHeader } from "./client";
 
 /**
- * First or last key.
- */
-export const EDGE_KEY = "\0";
-
-/**
  * Available values sort order.
  */
 export enum SortOrder {
@@ -44,11 +39,10 @@ export interface IRangeRequest {
    */
   key: Buffer;
   /**
-   * The upper bound on the requested range [key, rangeEnd). If rangeEnd
-   * is '\0', the range is all keys >= key. If the rangeEnd is one bit larger
-   * than the given key, then the range requests get the all keys with the prefix
-   * (the given key). If both key and rangeEnd are '\0', then range requests
-   * returns all keys.
+   * The upper bound on the requested range [key, range_end). If range_end is '\0',
+   * the range is all keys >= key. If range_end is key plus one (e.g., "aa"+1 == "ab",
+   * "a\xff"+1 == "b"), then the range request gets all keys prefixed with key. If
+   * both key and range_end are '\0', then the range request returns all keys.
    */
   rangeEnd?: Buffer;
   /**

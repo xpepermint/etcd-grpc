@@ -5,7 +5,7 @@ var __1 = require("..");
 ava_1["default"].cb("method `watch` starts listening for changes", function (t) {
     var watcher = new __1.WatchClient();
     watcher.watch({
-        key: new Buffer(__1.EDGE_KEY)
+        key: new Buffer("\0")
     });
     watcher.on("data", function (res) {
         watcher.close();
@@ -19,7 +19,7 @@ ava_1["default"].cb("throws error when no connection", function (t) {
         endpoints: ["127.0.0.1:7891"]
     });
     watcher.watch({
-        key: new Buffer(__1.EDGE_KEY)
+        key: new Buffer("\0")
     });
     watcher.on("error", function (e) {
         t.is(__1.getErrorKind(e) === __1.ErrorKind.CONNECTION_FAILED, true);
@@ -34,7 +34,7 @@ ava_1["default"].cb("method `reconnect` connects to the next available endpoint"
         t.is(__1.getErrorKind(e) === __1.ErrorKind.CONNECTION_FAILED, true);
         watcher.reconnect();
         watcher.watch({
-            key: new Buffer(__1.EDGE_KEY)
+            key: new Buffer("\0")
         });
     });
     watcher.on("data", function (res) {

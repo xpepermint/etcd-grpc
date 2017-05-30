@@ -1,6 +1,5 @@
 /// <reference types="node" />
 import { Client, IKeyValue, IResponseHeader } from "./client";
-export declare const EDGE_KEY = "\0";
 export declare enum SortOrder {
     NONE = 0,
     ASCEND = 1,

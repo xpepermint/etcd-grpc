@@ -73,14 +73,23 @@ kv.range({
 });
 ```
 
-Etcd stores keys in a sequence. By using a special character `\0` we can target the first or the last key in the store. The following example returns all keys in the etcd store.
+There are some parts of etcd that could represent an endless source of confusion. Etcd stores keys in a sequence and there is a special key named `\0` which you can use to target the first or the last key in the store. 
 
 ```ts
-import { EDGE_KEY } from "etcd-grpc";
-
 kv.range({
-  key: new Buffer(EDGE_KEY), // first key
-  rangeEnd: new Buffer(EDGE_KEY), // last key
+  key: new Buffer("\0"), // first key
+  rangeEnd: new Buffer("\0"), // last key
+}).then((res) => {
+  console.log(res);
+});
+```
+
+Another trick is that if you set `rangeEnd` to a `key` plus one byte, the etcd will read keys from `key` to the last key prefixed with `key` (all keys of a directory). This means that if the `key` name is `/aaa`, then to get the rest of the keys of that prefix, we need to set `rangeEnd` to `aab`. You can use the [incstr](https://www.npmjs.com/package/incstr) NPM module to increment strings or check on [Stackoverflow](https://stackoverflow.com/q/38352497/132257).
+
+```ts
+kv.range({
+  key: new Buffer("name/aaa"), // start key
+  rangeEnd: new Buffer("name/aab"), // get all keys `name/{something}` from `name/aaa`
 }).then((res) => {
   console.log(res);
 });

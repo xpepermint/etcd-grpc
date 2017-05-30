@@ -1,10 +1,10 @@
 import test from "ava";
-import { WatchClient, getErrorKind, ErrorKind, EDGE_KEY } from "..";
+import { WatchClient, getErrorKind, ErrorKind } from "..";
 
 test.cb("method `watch` starts listening for changes", (t) => {
   const watcher = new WatchClient();
   watcher.watch({
-    key: new Buffer(EDGE_KEY),
+    key: new Buffer("\0"),
   });
   watcher.on("data", (res) => {
     watcher.close();
@@ -19,7 +19,7 @@ test.cb("throws error when no connection", (t) => {
     endpoints: ["127.0.0.1:7891"],
   });
   watcher.watch({
-    key: new Buffer(EDGE_KEY),
+    key: new Buffer("\0"),
   });
   watcher.on("error", (e) => {
     t.is(getErrorKind(e) === ErrorKind.CONNECTION_FAILED, true);
@@ -35,7 +35,7 @@ test.cb("method `reconnect` connects to the next available endpoint", (t) => {
     t.is(getErrorKind(e) === ErrorKind.CONNECTION_FAILED, true);
     watcher.reconnect();
     watcher.watch({
-      key: new Buffer(EDGE_KEY),
+      key: new Buffer("\0"),
     });
   });
   watcher.on("data", (res) => {
