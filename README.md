@@ -84,7 +84,7 @@ kv.range({
 });
 ```
 
-Another trick is that if you set `rangeEnd` to a `key` plus one byte, the etcd will read keys from `key` to the last key prefixed with `key` (all keys of a directory). This means that if the `key` name is `/aaa`, then to get the rest of the keys of that prefix, we need to set `rangeEnd` to `aab`. You can use the [incstr](https://www.npmjs.com/package/incstr) NPM module to increment strings or check on [Stackoverflow](https://stackoverflow.com/q/38352497/132257).
+Another trick is that if you set `rangeEnd` to a `key` plus one byte, the etcd will read keys from `key` to the last key prefixed with `key` (all keys of a directory). This means that if the `key` name is `/aaa`, then to get the rest of the keys of that prefix, we need to set `rangeEnd` to `aab`. You can use the [incstr](https://www.npmjs.com/package/incstr) NPM module to increment strings or check the [Stackoverflow](https://stackoverflow.com/q/38352497/132257) page.
 
 ```ts
 kv.range({
