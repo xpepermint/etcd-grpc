@@ -8,11 +8,11 @@ export interface ILeaseGrantRequest {
   /**
    * The advisory time-to-live in seconds.
    */
-  ttl?: string | number;
+  ttl?: number | string;
   /**
    * The requested ID for the lease. If ID is set to 0, the lessor chooses an ID.
    */
-  id?: string | number;
+  id?: number | string;
 }
 
 /**
@@ -26,11 +26,11 @@ export interface ILeaseGrantResponse {
   /**
    * The lease ID for the granted lease.
    */
-  id: string;
+  id: number | string;
   /**
    * the server chosen lease time-to-live in seconds.
    */
-  ttl: string;
+  ttl: number | string;
   /**
    * Error message.
    */
@@ -44,7 +44,7 @@ export interface ILeaseRevokeRequest {
   /**
    * The lease ID to revoke. When the ID is revoked, all associated keys will be deleted.
    */
-  id?: string | number;
+  id?: number | string;
 }
 
 /**
@@ -64,7 +64,7 @@ export interface ILeaseKeepAliveRequest {
   /**
    * The lease ID for the lease to keep alive.
    */
-  id?: string | number;
+  id?: number | string;
 }
 
 /**
@@ -78,11 +78,11 @@ export interface ILeaseKeepAliveResponse {
   /**
    * The lease ID from the keep alive request.
    */
-  id: string | number;
+  id: number | string;
   /**
    * The new time-to-live for the lease.
    */
-  ttl: string;
+  ttl: number | string;
 }
 
 /**

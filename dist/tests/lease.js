@@ -45,7 +45,7 @@ ava_1["default"].serial("method `leaseGrant` creates new TTL lease", function (t
             case 0:
                 lease = new __1.LeaseClient();
                 return [4, lease.leaseGrant({
-                        ttl: 10
+                        ttl: "10"
                     })];
             case 1:
                 res = _a.sent();
@@ -63,7 +63,7 @@ ava_1["default"].serial("method `leaseRevoke` removes the lease", function (t) {
             case 0:
                 lease = new __1.LeaseClient();
                 return [4, lease.leaseGrant({
-                        ttl: 10
+                        ttl: "10"
                     }).then(function (res) {
                         return lease.leaseRevoke({
                             id: res.id

@@ -14,16 +14,16 @@ export interface IKeyValue {
   /**
    * The revision of last creation on this key.
    */
-  createRevision: number;
+  createRevision: number | string;
   /**
    * The revision of last modification on this key.
    */
-  modRevision: number;
+  modRevision: number | string;
   /**
    * The version of the key. A deletion resets the version
    * to zero and any modification of the key increases its version.
    */
-  version: string;
+  version: number | string;
   /**
    * The value held by the key, in bytes.
    */
@@ -33,7 +33,7 @@ export interface IKeyValue {
    * expires, the key will be deleted. If lease is 0, then no lease is
    * attached to the key.
    */
-  lease: string;
+  lease: number | string;
 }
 
 /**
@@ -78,22 +78,22 @@ export interface IResponseHeader {
   /**
    * The ID of the cluster which sent the response.
    */
-  clusterId: string;
+  clusterId: number | string;
   /**
    * The ID of the member which sent the response.
    */
-  memberId: string;
+  memberId: number | string;
   /**
    * The key-value store revision when the request was applied. This value is the current
    * revision of etcd. It is incremented every time the etcd database is modified.
    */
-  revision: string;
+  revision: number | string;
   /**
    * The raft term when the request was applied. This number will increase whenever an etcd
    * master election happens in the cluster. If this number is increasing rapidly, you may
    * need to tune the election timeout.
    */
-  raftTerm: string;
+  raftTerm: number | string;
 }
 
 /**

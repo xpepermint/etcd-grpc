@@ -1,14 +1,20 @@
 /// <reference types="node" />
 import { Duplex } from "stream";
 import { Client, IEvent, IResponseHeader } from "./client";
+export declare enum FilterType {
+    NOPUT = 0,
+    NODELETE = 1,
+}
 export interface IWatchCreateRequest {
     key?: Buffer;
     rangeEnd?: Buffer;
-    startRevision?: string;
+    startRevision?: number | string;
     progressNotify?: boolean;
+    filters?: FilterType[];
+    prevKv?: boolean;
 }
 export interface IWatchCancelRequest {
-    watchId: string;
+    watchId: number | string;
 }
 export interface IWatchResponse {
     header: IResponseHeader;

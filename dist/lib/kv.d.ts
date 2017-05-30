@@ -15,24 +15,31 @@ export declare enum SortTarget {
 export interface IRangeRequest {
     key: Buffer;
     rangeEnd?: Buffer;
-    limit?: number;
-    revision?: number;
+    limit?: number | string;
+    revision?: number | string;
     sortOrder?: SortOrder;
     sortTarget?: SortTarget;
     serializable?: boolean;
     keysOnly?: boolean;
     countOnly?: boolean;
+    minModRevision?: number | string;
+    maxModRevision?: number | string;
+    minCreateRevision?: number | string;
+    maxCreateRevision?: number | string;
 }
 export interface IRangeResponse {
     header: IResponseHeader;
     kvs: IKeyValue[];
     more: boolean;
-    count: string;
+    count: number | string;
 }
 export interface IPutRequest {
     key: Buffer;
     value: Buffer;
-    lease?: string;
+    lease?: number | string;
+    prevKv?: boolean;
+    ignoreValue?: boolean;
+    ignoreLease?: boolean;
 }
 export interface IPutResponse {
     header: IResponseHeader;
@@ -40,13 +47,14 @@ export interface IPutResponse {
 export interface IDeleteRangeRequest {
     key: Buffer;
     rangeEnd?: Buffer;
+    prevKv?: boolean;
 }
 export interface IDeleteRangeResponse {
     header: IResponseHeader;
-    deleted: string;
+    deleted: number | string;
 }
 export interface ICompactionRequest {
-    revision?: string | number;
+    revision?: number | string;
     physical?: boolean;
 }
 export interface ICompactionResponse {
@@ -88,9 +96,9 @@ export interface ICompare {
     result?: CompareResult;
     target?: CompareTarget;
     key?: Buffer;
-    version?: string | number;
-    createRevision?: string | number;
-    modRevision?: string | number;
+    version?: number | string;
+    createRevision?: number | string;
+    modRevision?: number | string;
     value?: Buffer;
 }
 export declare class KVClient extends Client {

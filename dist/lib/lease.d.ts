@@ -1,28 +1,28 @@
 import { IResponseHeader } from "./client";
 import { Client } from "./client";
 export interface ILeaseGrantRequest {
-    ttl?: string | number;
-    id?: string | number;
+    ttl?: number | string;
+    id?: number | string;
 }
 export interface ILeaseGrantResponse {
     header: IResponseHeader;
-    id: string;
-    ttl: string;
+    id: number | string;
+    ttl: number | string;
     error: string;
 }
 export interface ILeaseRevokeRequest {
-    id?: string | number;
+    id?: number | string;
 }
 export interface ILeaseRevokeResponse {
     header: IResponseHeader;
 }
 export interface ILeaseKeepAliveRequest {
-    id?: string | number;
+    id?: number | string;
 }
 export interface ILeaseKeepAliveResponse {
     header: IResponseHeader;
-    id: string | number;
-    ttl: string;
+    id: number | string;
+    ttl: number | string;
 }
 export declare class LeaseClient extends Client {
     constructor({endpoints, connect}?: {

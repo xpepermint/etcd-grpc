@@ -2,11 +2,11 @@
 import { EventEmitter } from "events";
 export interface IKeyValue {
     key: Buffer;
-    createRevision: number;
-    modRevision: number;
-    version: string;
+    createRevision: number | string;
+    modRevision: number | string;
+    version: number | string;
     value: Buffer;
-    lease: string;
+    lease: number | string;
 }
 export declare enum EventType {
     PUT = 0,
@@ -18,10 +18,10 @@ export interface IEvent {
     prevKv: IKeyValue;
 }
 export interface IResponseHeader {
-    clusterId: string;
-    memberId: string;
-    revision: string;
-    raftTerm: string;
+    clusterId: number | string;
+    memberId: number | string;
+    revision: number | string;
+    raftTerm: number | string;
 }
 export declare abstract class Client extends EventEmitter {
     protected rpc: any;

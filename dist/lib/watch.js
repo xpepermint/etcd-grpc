@@ -11,6 +11,12 @@ var __extends = (this && this.__extends) || (function () {
 })();
 exports.__esModule = true;
 var client_1 = require("./client");
+var incstr = require("incstr");
+var FilterType;
+(function (FilterType) {
+    FilterType[FilterType["NOPUT"] = 0] = "NOPUT";
+    FilterType[FilterType["NODELETE"] = 1] = "NODELETE";
+})(FilterType = exports.FilterType || (exports.FilterType = {}));
 var WatchClient = (function (_super) {
     __extends(WatchClient, _super);
     function WatchClient(_a) {
@@ -48,7 +54,7 @@ var WatchClient = (function (_super) {
             return;
         }
         this.watching = true;
-        this.watchId = (parseInt(this.watchId) + 1).toString();
+        this.watchId = incstr(this.watchId);
         this.stream.write(this.normalizeRequestObject({
             createRequest: req
         }));

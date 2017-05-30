@@ -1,5 +1,20 @@
 import { Duplex } from "stream";
 import { Client, IEvent, IResponseHeader } from "./client";
+import * as incstr from "incstr";
+
+/**
+ * Available server events filters.
+ */
+export enum FilterType {
+  /**
+   * Filter out put event.
+   */
+  NOPUT = 0,
+  /**
+   * Filter out delete event.
+   */
+  NODELETE = 1,
+}
 
 /**
  * Create watcher request interface.
@@ -18,7 +33,7 @@ export interface IWatchCreateRequest {
   /**
    * An optional revision to watch from (inclusive). No startRevision is "now".
    */
-  startRevision?: string;
+  startRevision?: number | string;
   /**
    * If set then the etcd server will periodically send a IWatchResponse with no
    * events to the new watcher if there are no recent events. It is useful when
@@ -27,6 +42,15 @@ export interface IWatchCreateRequest {
    * based on current load.
    */
   progressNotify?: boolean;
+  /**
+   * Filter the events at server side before it sends back to the watcher.
+   */
+  filters?: FilterType[];
+  /**
+   * If set, created watcher gets the previous KV before the event happens. If
+   * the previous KV is already compacted, nothing will be returned.
+   */
+  prevKv?: boolean;
 }
 
 /**
@@ -36,7 +60,7 @@ export interface IWatchCancelRequest {
   /**
    * The watcher id to cancel so that no more events are transmitted.
    */
-  watchId: string;
+  watchId: number | string;
 }
 
 /**
@@ -144,7 +168,7 @@ export class WatchClient extends Client {
     if (this.watching) { return; }
 
     this.watching = true;
-    this.watchId = (parseInt(this.watchId) + 1).toString();
+    this.watchId = incstr(this.watchId);
 
     this.stream.write(
       this.normalizeRequestObject({

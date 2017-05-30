@@ -48,13 +48,13 @@ export interface IRangeRequest {
   /**
    * A limit on the number of keys returned for the request.
    */
-  limit?: number;
+  limit?: number | string;
   /**
    * The point-in-time of the key-value store to use for the range. If revision
    * is less or equal to zero, the range is over the newest key-value store. If
    * the revision has been compacted, ErrCompacted is returned as a response.
    */
-  revision?: number;
+  revision?: number | string;
   /**
    * The order for returned sorted results.
    */
@@ -80,6 +80,26 @@ export interface IRangeRequest {
    * When set returns only the count of the keys in the range.
    */
   countOnly?: boolean;
+  /**
+   * The lower bound for returned key mod revisions; all keys with lesser mod revisions
+   * will be filtered away.
+   */
+  minModRevision?: number | string;
+  /**
+   * The upper bound for returned key mod revisions; all keys with greater mod revisions
+   * will be filtered away.
+   */
+  maxModRevision?: number | string;
+  /**
+   * The lower bound for returned key create revisions; all keys with lesser create
+   * trevisions will be filtered away.
+   */
+  minCreateRevision?: number | string;
+  /**
+   * The upper bound for returned key create revisions; all keys with greater create
+   * revisions will be filtered away.
+   */
+  maxCreateRevision?: number | string;
 }
 
 /**
@@ -102,7 +122,7 @@ export interface IRangeResponse {
   /**
    * Set to the number of keys within the range when requested.
    */
-  count: string;
+  count: number | string;
 }
 
 /**
@@ -121,7 +141,22 @@ export interface IPutRequest {
    * The lease ID to associate with the key in the key-value store. A lease
    * value of 0 indicates no lease.
    */
-  lease?: string;
+  lease?: number | string;
+  /**
+   * If set, etcd gets the previous key-value pair before changing it. The
+   * previous key-value pair will be returned in the put response.
+   */
+  prevKv?: boolean;
+  /**
+   * If set, etcd updates the key using its current value. Returns an error
+   * if the key does not exist.
+   */
+  ignoreValue?: boolean;
+  /**
+   * If set, etcd updates the key using its current lease. Returns an error
+   * if the key does not exist.
+   */
+  ignoreLease?: boolean;
 }
 
 /**
@@ -149,6 +184,11 @@ export interface IDeleteRangeRequest {
    * to the key argument.
    */
   rangeEnd?: Buffer;
+  /**
+   * If set, etcd gets the previous key-value pairs before deleting it. The
+   * previous key-value pairs will be returned in the delete response.
+   */
+  prevKv?: boolean;
 }
 
 /**
@@ -162,7 +202,7 @@ export interface IDeleteRangeResponse {
   /**
    * The number of keys deleted by the delete range request.
    */
-  deleted: string;
+  deleted: number | string;
 }
 
 /**
@@ -172,7 +212,7 @@ export interface ICompactionRequest {
   /**
    * The key-value store revision for the compaction operation.
    */
-  revision?: string | number;
+  revision?: number | string;
   /**
    * When true the RPC will wait until the compaction is physically applied to the local
    * database such that compacted entries are totally removed from the backend database.
@@ -192,7 +232,7 @@ export interface ICompactionResponse {
 
 /**
  * Transaction request interface.
- * 
+ *
  * The implementation hinges around a powerful primitive which we call MultiOp. All
  * other database operations except for iteration are implemented as a single call to
  * MultiOp. A MultiOp is applied atomically and consists of three components:
@@ -304,15 +344,15 @@ export interface ICompare {
   /**
    * The version of the given key
    */
-  version?: string | number;
+  version?: number | string;
   /**
    * The creation revision of the given key
    */
-  createRevision?: string | number;
+  createRevision?: number | string;
   /**
    * The last modified revision of the given key.
    */
-  modRevision?: string | number;
+  modRevision?: number | string;
   /**
    * The value of the given key, in bytes.
    */
