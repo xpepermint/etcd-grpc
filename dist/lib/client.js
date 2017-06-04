@@ -45,7 +45,7 @@ var Client = (function (_super) {
         if (!this.client) {
             return;
         }
-        grpc.getClientChannel(this.client).close();
+        grpc.closeClient(this.client);
         this.client = null;
     };
     Client.prototype.reconnect = function () {
