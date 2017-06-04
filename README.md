@@ -55,6 +55,7 @@ import { getErrorKind, ErrorKind } from "etcd-grpc";
 promise.catch((err) => {
   if (getErrorKind(err) === ErrorKind.CONNECTION_FAILED) {
     kv.reconnect(); // reconnect to the next available endpoint (round-robin style)
+    kv.put({ ... }); // try-again code
   } else {
     throw err;
   }
@@ -171,6 +172,7 @@ import { getErrorKind, ErrorKind } from "etcd-grpc";
 watcher.on("error", (err) => {
   if (getErrorKind(err) === ErrorKind.CONNECTION_FAILED) {
     watcher.reconnect();
+    watcher.watch({ ... }); // try-again code
   }
 });
 ```

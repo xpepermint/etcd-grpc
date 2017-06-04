@@ -1,5 +1,6 @@
 import { Duplex } from "stream";
 import { Client, IEvent, IResponseHeader } from "./client";
+import * as grpc from "grpc";
 import * as incstr from "incstr";
 
 /**
@@ -139,22 +140,16 @@ export class WatchClient extends Client {
 
     super.connect();
 
+    function emitEvent(name, res) {
+      this.emit(name, this.normalizeResponseObject(res));
+    }
+
     this.stream = this.client.watch();
-    this.stream.on("data", (res) => {
-      this.emit("data", this.normalizeResponseObject(res));
-    });
-    this.stream.on("finish", (res) => {
-      this.emit("finish", this.normalizeResponseObject(res));
-    });
-    this.stream.on("end", (res) => {
-      this.emit("end", this.normalizeResponseObject(res));
-    });
-    this.stream.on("close", (res) => {
-      this.emit("close", this.normalizeResponseObject(res));
-    });
-    this.stream.on("error", (res) => {
-      this.emit("error", this.normalizeResponseObject(res));
-    });
+    this.stream.on("data", (res) => emitEvent.call(this, "data", res));
+    this.stream.on("finish", (res) => emitEvent.call(this, "finish", res));
+    this.stream.on("end", (res) => emitEvent.call(this, "end", res));
+    this.stream.on("close", (res) => emitEvent.call(this, "close", res));
+    this.stream.on("error", (res) => emitEvent.call(this, "error", res));
   }
 
   /**
@@ -163,10 +158,12 @@ export class WatchClient extends Client {
   public close() {
     if (!this.client) { return; }
 
-    this.stream.end();
-    super.close();
+    this.stream.removeAllListeners(); // detach listeners
+    this.stream.once("error", () => {}); // ignore errors (client is almost closed)
+    this.stream.end(); // end stream
+    this.stream = null;
 
-    this.watching = false;
+    super.close();
   }
 
   /**
