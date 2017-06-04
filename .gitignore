@@ -2,3 +2,4 @@
 node_modules
 .vscode
 default.etcd
+test.js

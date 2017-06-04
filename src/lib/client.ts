@@ -156,7 +156,7 @@ export abstract class Client extends EventEmitter {
    */
   public close() {
     if (!this.client) { return; }
-
+    
     grpc.getClientChannel(this.client).close();
     this.client = null;
   }

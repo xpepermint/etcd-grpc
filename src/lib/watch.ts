@@ -139,16 +139,22 @@ export class WatchClient extends Client {
 
     super.connect();
 
-    function emitEvent(name, res) {
-      this.emit(name, this.normalizeResponseObject(res));
-    }
-
     this.stream = this.client.watch();
-    this.stream.on("data", (res) => emitEvent.call(this, "data", res));
-    this.stream.on("finish", (res) => emitEvent.call(this, "finish", res));
-    this.stream.on("end", (res) => emitEvent.call(this, "end", res));
-    this.stream.on("close", (res) => emitEvent.call(this, "close", res));
-    this.stream.on("error", (res) => emitEvent.call(this, "error", res));
+    this.stream.on("data", (res) => {
+      this.emit("data", this.normalizeResponseObject(res));
+    });
+    this.stream.on("finish", (res) => {
+      this.emit("finish", this.normalizeResponseObject(res));
+    });
+    this.stream.on("end", (res) => {
+      this.emit("end", this.normalizeResponseObject(res));
+    });
+    this.stream.on("close", (res) => {
+      this.emit("close", this.normalizeResponseObject(res));
+    });
+    this.stream.on("error", (res) => {
+      this.emit("error", this.normalizeResponseObject(res));
+    });
   }
 
   /**
@@ -159,6 +165,8 @@ export class WatchClient extends Client {
 
     this.stream.end();
     super.close();
+
+    this.watching = false;
   }
 
   /**

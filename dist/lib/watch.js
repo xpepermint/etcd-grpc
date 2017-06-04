@@ -32,15 +32,22 @@ var WatchClient = (function (_super) {
             return;
         }
         _super.prototype.connect.call(this);
-        function emitEvent(name, res) {
-            this.emit(name, this.normalizeResponseObject(res));
-        }
         this.stream = this.client.watch();
-        this.stream.on("data", function (res) { return emitEvent.call(_this, "data", res); });
-        this.stream.on("finish", function (res) { return emitEvent.call(_this, "finish", res); });
-        this.stream.on("end", function (res) { return emitEvent.call(_this, "end", res); });
-        this.stream.on("close", function (res) { return emitEvent.call(_this, "close", res); });
-        this.stream.on("error", function (res) { return emitEvent.call(_this, "error", res); });
+        this.stream.on("data", function (res) {
+            _this.emit("data", _this.normalizeResponseObject(res));
+        });
+        this.stream.on("finish", function (res) {
+            _this.emit("finish", _this.normalizeResponseObject(res));
+        });
+        this.stream.on("end", function (res) {
+            _this.emit("end", _this.normalizeResponseObject(res));
+        });
+        this.stream.on("close", function (res) {
+            _this.emit("close", _this.normalizeResponseObject(res));
+        });
+        this.stream.on("error", function (res) {
+            _this.emit("error", _this.normalizeResponseObject(res));
+        });
     };
     WatchClient.prototype.close = function () {
         if (!this.client) {
@@ -48,6 +55,7 @@ var WatchClient = (function (_super) {
         }
         this.stream.end();
         _super.prototype.close.call(this);
+        this.watching = false;
     };
     WatchClient.prototype.watch = function (req) {
         if (this.watching) {
