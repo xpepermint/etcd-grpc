@@ -43,4 +43,7 @@ test.cb("method `reconnect` connects to the next available endpoint", (t) => {
     t.pass();
     t.end();
   });
+  watcher.watch({
+    key: new Buffer("\0"),
+  });
 });

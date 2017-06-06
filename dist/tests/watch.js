@@ -42,5 +42,8 @@ ava_1["default"].cb("method `reconnect` connects to the next available endpoint"
         t.pass();
         t.end();
     });
+    watcher.watch({
+        key: new Buffer("\0")
+    });
 });
 //# sourceMappingURL=watch.js.map

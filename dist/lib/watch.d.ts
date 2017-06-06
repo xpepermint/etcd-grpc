@@ -32,7 +32,6 @@ export declare class WatchClient extends Client {
         endpoints?: string[];
         connect?: boolean;
     });
-    connect(): void;
     close(): void;
     watch(req?: IWatchCreateRequest): void;
     cancel(): void;

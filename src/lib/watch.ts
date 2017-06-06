@@ -133,35 +133,16 @@ export class WatchClient extends Client {
   }
 
   /**
-   * Opens connections for all supported services.
-   */
-  public connect() {
-    if (this.client) { return; }
-
-    super.connect();
-
-    function emitEvent(name, res) {
-      this.emit(name, this.normalizeResponseObject(res));
-    }
-
-    this.stream = this.client.watch();
-    this.stream.on("data", (res) => emitEvent.call(this, "data", res));
-    this.stream.on("finish", (res) => emitEvent.call(this, "finish", res));
-    this.stream.on("end", (res) => emitEvent.call(this, "end", res));
-    this.stream.on("close", (res) => emitEvent.call(this, "close", res));
-    this.stream.on("error", (res) => emitEvent.call(this, "error", res));
-  }
-
-  /**
    * Closes connections for all supported services.
    */
   public close() {
-    if (!this.client) { return; }
-
     this.stream.removeAllListeners(); // detach listeners
     this.stream.once("error", () => {}); // ignore errors (client is almost closed)
     this.stream.end(); // end stream
     this.stream = null;
+
+    this.watchId = "0";
+    this.watching = false;
 
     super.close();
   }
@@ -172,7 +153,25 @@ export class WatchClient extends Client {
   public watch(req?: IWatchCreateRequest) {
     if (this.watching) { return; }
 
-    this.watching = true;
+    if (!this.stream) {
+      this.stream = this.client.watch();
+      this.stream.on("data", (res) => {
+        this.emit("data", this.normalizeResponseObject(res));
+      });
+      this.stream.on("finish", (res) => {
+        this.emit("finish", this.normalizeResponseObject(res));
+      });
+      this.stream.on("end", (res) => {
+        this.emit("end", this.normalizeResponseObject(res));
+      });
+      this.stream.on("close", (res) => {
+        this.emit("close", this.normalizeResponseObject(res));
+      });
+      this.stream.on("error", (err) => {
+        this.emit("error", this.normalizeResponseObject(err));
+      });
+    }
+
     this.watchId = incstr(this.watchId);
 
     this.stream.write(
@@ -187,8 +186,6 @@ export class WatchClient extends Client {
    */
   public cancel() {
     if (!this.watching) { return; }
-
-    this.watching = false;
 
     this.stream.write(
       this.normalizeRequestObject({

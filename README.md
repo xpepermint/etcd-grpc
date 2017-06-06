@@ -47,14 +47,14 @@ kv.put({
 });
 ```
 
-The connection to the `etcd` server will sometimes fail thus the performing commands will fail. A command will throw an error in case of connectivity problem which we can catch and then try to reconnect manually.
+The connection to the `etcd` server will sometimes fail thus the performing commands will fail. A command will throw an error in case of connectivity problem which we can catch and then reconnect the client manually.
 
 ```ts
 import { getErrorKind, ErrorKind } from "etcd-grpc";
 
 promise.catch((err) => {
   if (getErrorKind(err) === ErrorKind.CONNECTION_FAILED) {
-    kv.reconnect(); // reconnect to the next available endpoint (round-robin style)
+    kv.reconnect(); // reconnect the client to the next available endpoint (round-robin style)
     kv.put({ ... }); // try-again code
   } else {
     throw err;
@@ -145,14 +145,14 @@ The `Watch` service allows us to connect to the `etcd` server and listen for cha
 import { WatchClient } from "etcd-grpc";
 
 const watcher = new WatchClient();
-watcher.watch({ // watch the `name` key
-  key: new Buffer("name"),
-});
 watcher.on("data", console.log);
 watcher.on("finish", console.log);
 watcher.on("end", console.log);
 watcher.on("close", console.log);
 watcher.on("error", console.log);
+watcher.watch({ // watch the `name` key
+  key: new Buffer("name"),
+});
 ```
 
 Watcher can be paused by calling the `cancel()` method. To start watching again, we can run the `watch()` method again.
@@ -164,14 +164,14 @@ watcher.watch({ // continue watching the `name` key
 });
 ```
 
-Watcher also provides the `reconnect()` method which we can use in case of conectivity problems. The method will try to reconnect to the next available endpoint.
+Watcher also provides the `reconnect()` method which we can use in case of conectivity problems. The method will reconnect the client to the next available endpoint.
 
 ```ts
 import { getErrorKind, ErrorKind } from "etcd-grpc";
 
 watcher.on("error", (err) => {
   if (getErrorKind(err) === ErrorKind.CONNECTION_FAILED) {
-    watcher.reconnect();
+    watcher.reconnect(); // reconfigure the client
     watcher.watch({ ... }); // try-again code
   }
 });
