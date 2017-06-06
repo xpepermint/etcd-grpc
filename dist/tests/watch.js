@@ -3,7 +3,8 @@ exports.__esModule = true;
 var ava_1 = require("ava");
 var __1 = require("..");
 ava_1["default"].cb("method `watch` starts listening for changes", function (t) {
-    var watcher = new __1.WatchClient();
+    var client = new __1.Etcd();
+    var watcher = client.createWatcher();
     watcher.watch({
         key: new Buffer("\0")
     });
@@ -15,9 +16,10 @@ ava_1["default"].cb("method `watch` starts listening for changes", function (t) 
     });
 });
 ava_1["default"].cb("throws error when no connection", function (t) {
-    var watcher = new __1.WatchClient({
+    var client = new __1.Etcd({
         endpoints: ["127.0.0.1:7891"]
     });
+    var watcher = client.createWatcher();
     watcher.watch({
         key: new Buffer("\0")
     });
@@ -27,12 +29,13 @@ ava_1["default"].cb("throws error when no connection", function (t) {
     });
 });
 ava_1["default"].cb("method `reconnect` connects to the next available endpoint", function (t) {
-    var watcher = new __1.WatchClient({
+    var client = new __1.Etcd({
         endpoints: ["127.0.0.1:7891", "127.0.0.1:2379"]
     });
+    var watcher = client.createWatcher();
     watcher.on("error", function (e) {
         t.is(__1.getErrorKind(e) === __1.ErrorKind.CONNECTION_FAILED, true);
-        watcher.reconnect();
+        client.reconnect();
         watcher.watch({
             key: new Buffer("\0")
         });

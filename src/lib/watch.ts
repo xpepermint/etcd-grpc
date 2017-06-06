@@ -1,5 +1,6 @@
+import { EventEmitter } from "events";
 import { Duplex } from "stream";
-import { Client, IEvent, IResponseHeader } from "./client";
+import { IEvent, IResponseHeader } from "./rpc";
 import * as grpc from "grpc";
 import * as incstr from "incstr";
 
@@ -55,16 +56,6 @@ export interface IWatchCreateRequest {
 }
 
 /**
- * Cancel watcher request interface.
- */
-export interface IWatchCancelRequest {
-  /**
-   * The watcher id to cancel so that no more events are transmitted.
-   */
-  watchId: number | string;
-}
-
-/**
  * Watcher response interface.
  */
 export interface IWatchResponse {
@@ -105,99 +96,73 @@ export interface IWatchResponse {
 /**
  * Watcher class to listen for changes.
  */
-export class WatchClient extends Client {
+export class Watcher extends EventEmitter {
   /**
    * Stream watcher to listen for changes.
    */
   protected stream: Duplex;
   /**
-   * Watch identifier.
+   * Watch client instance.
    */
-  protected watchId: string = "0";
-  /**
-   * Watch indicator.
-   */
-  protected watching: boolean = false;
+  protected client: any;
 
   /**
    * Class constructor.
    */
-  public constructor({
-    endpoints = ["127.0.0.1:2379"],
-    connect = true,
-  }: {
-    endpoints?: string[];
-    connect?: boolean;
-  } = {}) {
-    super("Watch", { endpoints, connect });
-  }
+  public constructor(client) {
+    super();
 
-  /**
-   * Closes connections for all supported services.
-   */
-  public close() {
-    this.stream.removeAllListeners(); // detach listeners
-    this.stream.once("error", () => {}); // ignore errors (client is almost closed)
-    this.stream.end(); // end stream
-    this.stream = null;
-
-    this.watchId = "0";
-    this.watching = false;
-
-    super.close();
+    this.client = client;
   }
 
   /**
    * Starts listening for changes.
    */
   public watch(req?: IWatchCreateRequest) {
-    if (this.watching) { return; }
-
-    if (!this.stream) {
-      this.stream = this.client.watch();
-      this.stream.on("data", (res) => {
-        this.emit("data", this.normalizeResponseObject(res));
-      });
-      this.stream.on("finish", (res) => {
-        this.emit("finish", this.normalizeResponseObject(res));
-      });
-      this.stream.on("end", (res) => {
-        this.emit("end", this.normalizeResponseObject(res));
-      });
-      this.stream.on("close", (res) => {
-        this.emit("close", this.normalizeResponseObject(res));
-      });
-      this.stream.on("error", (err) => {
-        this.emit("error", this.normalizeResponseObject(err));
-      });
+    if (this.stream) {
+      this.close();
     }
 
-    this.watchId = incstr(this.watchId);
+    this.stream = this.client.watchClient.watch();
+    this.stream.on("data", (res) => {
+      this.emit("data", this.client.normalizeResponseObject(res));
+    });
+    this.stream.on("finish", (res) => {
+      this.emit("finish", this.client.normalizeResponseObject(res));
+    });
+    this.stream.on("end", (res) => {
+      this.emit("end", this.client.normalizeResponseObject(res));
+    });
+    this.stream.on("close", (res) => {
+      this.emit("close", this.client.normalizeResponseObject(res));
+    });
+    this.stream.on("error", (err) => {
+      this.emit("error", this.client.normalizeResponseObject(err));
+    });
 
     this.stream.write(
-      this.normalizeRequestObject({
+      this.client.normalizeRequestObject({
         createRequest: req,
       })
     );
   }
 
   /**
-   * Stops listening for changes but stays connected.
+   * Closes connections for all supported clients.
    */
-  public cancel() {
-    if (!this.watching) { return; }
+  public close() {
+    if (!this.stream) { return; }
 
-    this.stream.write(
-      this.normalizeRequestObject({
-        cancelRequest: { watchId: this.watchId } as IWatchCancelRequest,
-      })
-    );
+    this.stream.removeAllListeners(); // detach listeners
+    this.stream.once("error", () => {}); // ignore errors (client is almost closed)
+    this.stream.end(); // end stream
+    this.stream = null;
   }
 
   /**
    * Returns true if the stream is listening for changes.
    */
   public isWatching() {
-    return this.watching;
+    return !!this.stream;
   }
 }

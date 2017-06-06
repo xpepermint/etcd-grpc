@@ -39,12 +39,12 @@ exports.__esModule = true;
 var ava_1 = require("ava");
 var __1 = require("..");
 ava_1["default"].serial("method `put` sets a key with value", function (t) { return __awaiter(_this, void 0, void 0, function () {
-    var kv, res;
+    var client, res;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                kv = new __1.KVClient();
-                return [4, kv.put({
+                client = new __1.Etcd();
+                return [4, client.put({
                         key: new Buffer("name"),
                         value: new Buffer("foo")
                     })];
@@ -56,16 +56,16 @@ ava_1["default"].serial("method `put` sets a key with value", function (t) { ret
     });
 }); });
 ava_1["default"].serial("method `range` retrieves one or more keys", function (t) { return __awaiter(_this, void 0, void 0, function () {
-    var kv, res;
+    var client, res;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                kv = new __1.KVClient();
-                return [4, kv.put({
+                client = new __1.Etcd();
+                return [4, client.put({
                         key: new Buffer("name"),
                         value: new Buffer("foo")
                     }).then(function () {
-                        return kv.range({
+                        return client.range({
                             key: new Buffer("name")
                         });
                     })];
@@ -81,20 +81,20 @@ ava_1["default"].serial("method `range` retrieves one or more keys", function (t
     });
 }); });
 ava_1["default"].serial("method `deleteRange` removes the key", function (t) { return __awaiter(_this, void 0, void 0, function () {
-    var kv, res;
+    var client, res;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                kv = new __1.KVClient();
-                return [4, kv.put({
+                client = new __1.Etcd();
+                return [4, client.put({
                         key: new Buffer("name"),
                         value: new Buffer("foo")
                     }).then(function () {
-                        return kv.deleteRange({
+                        return client.deleteRange({
                             key: new Buffer("name")
                         });
                     }).then(function () {
-                        return kv.range({
+                        return client.range({
                             key: new Buffer("name")
                         });
                     })];
@@ -109,25 +109,22 @@ ava_1["default"].serial("method `deleteRange` removes the key", function (t) { r
     });
 }); });
 ava_1["default"].serial("method `txn` executes operations in transaction", function (t) { return __awaiter(_this, void 0, void 0, function () {
-    var kv, res, e_1;
+    var client, res, e_1;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                kv = new __1.KVClient({
-                    endpoints: ["127.0.0.1:7891", "127.0.0.1:2379"]
-                });
-                kv.reconnect();
+                client = new __1.Etcd();
                 _a.label = 1;
             case 1:
                 _a.trys.push([1, 4, , 5]);
-                return [4, kv.put({
+                return [4, client.put({
                         key: new Buffer("name"),
                         value: new Buffer("")
                     })];
             case 2:
                 _a.sent();
                 return [4, Promise.all([0, 1].map(function () {
-                        return kv.txn({
+                        return client.txn({
                             compare: {
                                 result: 0,
                                 target: 3,
@@ -163,15 +160,15 @@ ava_1["default"].serial("method `txn` executes operations in transaction", funct
     });
 }); });
 ava_1["default"].serial("method `compact` compacts etcd key-value store", function (t) { return __awaiter(_this, void 0, void 0, function () {
-    var kv, res, e_2;
+    var client, res, e_2;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                kv = new __1.KVClient();
+                client = new __1.Etcd();
                 _a.label = 1;
             case 1:
                 _a.trys.push([1, 3, , 4]);
-                return [4, kv.compact()];
+                return [4, client.compact()];
             case 2:
                 res = _a.sent();
                 t.deepEqual(Object.keys(res.header), ["clusterId", "memberId", "revision", "raftTerm"]);
@@ -190,17 +187,17 @@ ava_1["default"].serial("method `compact` compacts etcd key-value store", functi
     });
 }); });
 ava_1["default"].serial("method throws when no connection", function (t) { return __awaiter(_this, void 0, void 0, function () {
-    var kv, e_3;
+    var client, e_3;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                kv = new __1.KVClient({
+                client = new __1.Etcd({
                     endpoints: ["127.0.0.1:7891"]
                 });
                 _a.label = 1;
             case 1:
                 _a.trys.push([1, 3, , 4]);
-                return [4, kv.range({
+                return [4, client.range({
                         key: new Buffer("name")
                     })];
             case 2:
@@ -216,18 +213,18 @@ ava_1["default"].serial("method throws when no connection", function (t) { retur
     });
 }); });
 ava_1["default"].serial("method `reconnect` connects to the next available endpoint", function (t) { return __awaiter(_this, void 0, void 0, function () {
-    var kv, e_4;
+    var client, e_4;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                kv = new __1.KVClient({
+                client = new __1.Etcd({
                     endpoints: ["127.0.0.1:7891", "127.0.0.1:2379"]
                 });
-                kv.reconnect();
+                client.reconnect();
                 _a.label = 1;
             case 1:
                 _a.trys.push([1, 3, , 4]);
-                return [4, kv.range({
+                return [4, client.range({
                         key: new Buffer("name")
                     })];
             case 2:
@@ -242,4 +239,51 @@ ava_1["default"].serial("method `reconnect` connects to the next available endpo
         }
     });
 }); });
-//# sourceMappingURL=kv.js.map
+ava_1["default"].serial("method `leaseGrant` creates new TTL lease", function (t) { return __awaiter(_this, void 0, void 0, function () {
+    var client, res;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                client = new __1.Etcd();
+                return [4, client.leaseGrant({
+                        ttl: "10"
+                    })];
+            case 1:
+                res = _a.sent();
+                t.deepEqual(Object.keys(res), ["header", "id", "ttl", "error"]);
+                t.deepEqual(Object.keys(res.header), ["clusterId", "memberId", "revision", "raftTerm"]);
+                t.is(res.ttl, "10");
+                return [2];
+        }
+    });
+}); });
+ava_1["default"].serial("method `leaseRevoke` removes the lease", function (t) { return __awaiter(_this, void 0, void 0, function () {
+    var client, res;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                client = new __1.Etcd();
+                return [4, client.leaseGrant({
+                        ttl: "10"
+                    }).then(function (res) {
+                        return client.leaseRevoke({
+                            id: res.id
+                        });
+                    })];
+            case 1:
+                res = _a.sent();
+                t.deepEqual(Object.keys(res.header), ["clusterId", "memberId", "revision", "raftTerm"]);
+                return [2];
+        }
+    });
+}); });
+ava_1["default"].serial("method `createWatcher` returns a new instance of Watcher", function (t) { return __awaiter(_this, void 0, void 0, function () {
+    var client, res;
+    return __generator(this, function (_a) {
+        client = new __1.Etcd();
+        res = client.createWatcher();
+        t.deepEqual(res instanceof __1.Watcher, true);
+        return [2];
+    });
+}); });
+//# sourceMappingURL=rpc.js.map

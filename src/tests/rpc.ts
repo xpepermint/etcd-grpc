@@ -1,9 +1,9 @@
 import test from "ava";
-import { KVClient, getErrorKind, ErrorKind } from "..";
+import { Etcd, Watcher, getErrorKind, ErrorKind } from "..";
 
 test.serial("method `put` sets a key with value", async (t) => {
-  const kv = new KVClient();
-  const res = await kv.put({
+  const client = new Etcd();
+  const res = await client.put({
     key: new Buffer("name"),
     value: new Buffer("foo"),
   });
@@ -11,12 +11,12 @@ test.serial("method `put` sets a key with value", async (t) => {
 });
 
 test.serial("method `range` retrieves one or more keys", async (t) => {
-  const kv = new KVClient();
-  const res = await kv.put({
+  const client = new Etcd();
+  const res = await client.put({
     key: new Buffer("name"),
     value: new Buffer("foo"),
   }).then(() => {
-    return kv.range({
+    return client.range({
       key: new Buffer("name"),
     });
   });
@@ -28,16 +28,16 @@ test.serial("method `range` retrieves one or more keys", async (t) => {
 });
 
 test.serial("method `deleteRange` removes the key", async (t) => {
-  const kv = new KVClient();
-  const res = await kv.put({
+  const client = new Etcd();
+  const res = await client.put({
     key: new Buffer("name"),
     value: new Buffer("foo"),
   }).then(() => {
-    return kv.deleteRange({
+    return client.deleteRange({
       key: new Buffer("name"),
     });
   }).then(() => {
-    return kv.range({
+    return client.range({
       key: new Buffer("name"),
     });
   });
@@ -48,18 +48,15 @@ test.serial("method `deleteRange` removes the key", async (t) => {
 });
 
 test.serial("method `txn` executes operations in transaction", async (t) => {
-  const kv = new KVClient({
-    endpoints: ["127.0.0.1:7891", "127.0.0.1:2379"],
-  });
-  kv.reconnect();
+  const client = new Etcd();
   try {
-    await kv.put({ // reset key
+    await client.put({ // reset key
       key: new Buffer("name"),
       value: new Buffer(""),
     });
     let res = await Promise.all( // set keys
       [0, 1].map(() => {
-        return kv.txn({
+        return client.txn({
           compare: {
             result: 0,
             target: 3,
@@ -90,9 +87,9 @@ test.serial("method `txn` executes operations in transaction", async (t) => {
 });
 
 test.serial("method `compact` compacts etcd key-value store", async (t) => {
-  const kv = new KVClient();
+  const client = new Etcd();
   try {
-    const res = await kv.compact();
+    const res = await client.compact();
     t.deepEqual(Object.keys(res.header), ["clusterId", "memberId", "revision", "raftTerm"]);
   } catch (e) {
     if (e.message === "etcdserver: mvcc: required revision has been compacted") {
@@ -104,11 +101,11 @@ test.serial("method `compact` compacts etcd key-value store", async (t) => {
 });
 
 test.serial("method throws when no connection", async (t) => {
-  const kv = new KVClient({
+  const client = new Etcd({
     endpoints: ["127.0.0.1:7891"],
   });
   try {
-    await kv.range({
+    await client.range({
       key: new Buffer("name"),
     });
     t.fail();
@@ -118,16 +115,44 @@ test.serial("method throws when no connection", async (t) => {
 });
 
 test.serial("method `reconnect` connects to the next available endpoint", async (t) => {
-  const kv = new KVClient({
+  const client = new Etcd({
     endpoints: ["127.0.0.1:7891", "127.0.0.1:2379"],
   });
-  kv.reconnect();
+  client.reconnect();
   try {
-    await kv.range({
+    await client.range({
       key: new Buffer("name"),
     });
     t.pass();
   } catch (e) {
     t.fail();
   }
+});
+
+test.serial("method `leaseGrant` creates new TTL lease", async (t) => {
+  const client = new Etcd();
+  const res = await client.leaseGrant({
+    ttl: "10",
+  });
+  t.deepEqual(Object.keys(res), ["header", "id", "ttl", "error"]);
+  t.deepEqual(Object.keys(res.header), ["clusterId", "memberId", "revision", "raftTerm"]);
+  t.is(res.ttl, "10");
+});
+
+test.serial("method `leaseRevoke` removes the lease", async (t) => {
+  const client = new Etcd();
+  const res = await client.leaseGrant({
+    ttl: "10",
+  }).then((res) => {
+    return client.leaseRevoke({
+      id: res.id
+    });
+  });
+  t.deepEqual(Object.keys(res.header), ["clusterId", "memberId", "revision", "raftTerm"]);
+});
+
+test.serial("method `createWatcher` returns a new instance of Watcher", async (t) => {
+  const client = new Etcd();
+  const res = client.createWatcher();
+  t.deepEqual(res instanceof Watcher, true);
 });

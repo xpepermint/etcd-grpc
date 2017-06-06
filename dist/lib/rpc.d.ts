@@ -1,5 +1,28 @@
 /// <reference types="node" />
-import { Client, IKeyValue, IResponseHeader } from "./client";
+import { Watcher } from "./watch";
+export interface IKeyValue {
+    key: Buffer;
+    createRevision: number | string;
+    modRevision: number | string;
+    version: number | string;
+    value: Buffer;
+    lease: number | string;
+}
+export declare enum EventType {
+    PUT = 0,
+    DELETE = 1,
+}
+export interface IEvent {
+    type: EventType;
+    kv: IKeyValue;
+    prevKv: IKeyValue;
+}
+export interface IResponseHeader {
+    clusterId: number | string;
+    memberId: number | string;
+    revision: number | string;
+    raftTerm: number | string;
+}
 export declare enum SortOrder {
     NONE = 0,
     ASCEND = 1,
@@ -101,14 +124,53 @@ export interface ICompare {
     modRevision?: number | string;
     value?: Buffer;
 }
-export declare class KVClient extends Client {
+export interface ILeaseGrantRequest {
+    ttl?: number | string;
+    id?: number | string;
+}
+export interface ILeaseGrantResponse {
+    header: IResponseHeader;
+    id: number | string;
+    ttl: number | string;
+    error: string;
+}
+export interface ILeaseRevokeRequest {
+    id?: number | string;
+}
+export interface ILeaseRevokeResponse {
+    header: IResponseHeader;
+}
+export interface ILeaseKeepAliveRequest {
+    id?: number | string;
+}
+export interface ILeaseKeepAliveResponse {
+    header: IResponseHeader;
+    id: number | string;
+    ttl: number | string;
+}
+export declare class Etcd {
+    readonly rpc: any;
+    protected kvClient: any;
+    protected leaseClient: any;
+    protected watchClient: any;
+    endpoints: string[];
     constructor({endpoints, connect}?: {
         endpoints?: string[];
         connect?: boolean;
     });
+    connect(): void;
+    close(): void;
+    reconnect(): void;
+    perform(service: any, command: string, req: any): Promise<{}>;
+    normalizeRequestObject(req: any): any;
+    normalizeResponseObject(req: any): any;
+    isConnected(): boolean;
     put(req: IPutRequest): Promise<IPutResponse>;
     range(req: IRangeRequest): Promise<IRangeResponse>;
     deleteRange(req: IDeleteRangeRequest): Promise<IDeleteRangeResponse>;
     txn(req: ITxnRequest): Promise<ITxnResponse>;
     compact(req?: ICompactionRequest): Promise<ICompactionResponse>;
+    leaseGrant(req: ILeaseGrantRequest): Promise<ILeaseGrantResponse>;
+    leaseRevoke(req: ILeaseRevokeRequest): Promise<ILeaseRevokeResponse>;
+    createWatcher(): Watcher;
 }

@@ -24,22 +24,24 @@ Before you start make sure that [etcd](https://github.com/coreos/etcd) is runnin
 
 ### Initialization
 
-[Etcd](https://github.com/coreos/etcd) API consists of multiple [gRPC](http://www.grpc.io/) services. This package follows the same principle and provides a client class per service.
+[Etcd](https://github.com/coreos/etcd) API consists of multiple [gRPC](http://www.grpc.io/) services. This package provides all these functionalities through a unified API.
 
-### KV Client
-
-The `KV` client provides the interface for reading, updating and deleting keys stored in `etcd`. You start by initializing a new KV client.
+You start by initializing a new client.
 
 ```ts
-import { KVClient } from "etcd-grpc";
+import { Etcd } from "etcd-grpc";
 
-const kv = new KVClient();
+const client = new Etcd();
 ```
 
-We can now set the `name` key with value `John` as show below. Note that `key` and `value` must be of type `Buffer`.
+### KV Service
+
+The `KV` etcd service provides the API for reading, updating and deleting keys stored in etcd.
+
+We can set the `name` key with value `John` as show below. Note that `key` and `value` must be of type `Buffer`.
 
 ```ts
-kv.put({
+client.put({
   key: new Buffer("name"),
   value: new Buffer("John"),
 }).then((res) => {
@@ -47,37 +49,35 @@ kv.put({
 });
 ```
 
-The connection to the `etcd` server will sometimes fail thus the performing commands will fail. A command will throw an error in case of connectivity problem which we can catch and then reconnect the client manually.
+The connection to the `etcd` server can sometimes fail thus the performing commands can fail. A command will throw an error in case of connectivity problem which we can catch and then reconnect the client manually.
 
 ```ts
 import { getErrorKind, ErrorKind } from "etcd-grpc";
 
 promise.catch((err) => {
   if (getErrorKind(err) === ErrorKind.CONNECTION_FAILED) {
-    kv.reconnect(); // reconnect the client to the next available endpoint (round-robin style)
-    kv.put({ ... }); // try-again code
+    client.reconnect(); // reconnect the client to the next available endpoint (round-robin style)
+    client.put({ ... }); // try-again code
   } else {
     throw err;
   }
 });
 ```
 
-When targeting the server using DNS, the service, in some cases, can hang forever if the address can not be resolved. Use IP address as your enpoint address instead, because the connectivity problem will be handled by throwing an error as explained.
-
 We can read one or many keys from the server using the `range` method. In the following example we retrieve a single key `name`.
 
 ```ts
-kv.range({
+client.range({
   key: new Buffer("name"),
 }).then((res) => {
   console.log(res);
 });
 ```
 
-There are some parts of etcd that could represent an endless source of confusion. Etcd stores keys in a sequence and there is a special key named `\0` which you can use to target the first or the last key in the store.
+There are some parts of etcd that could represent an endless source of confusion. Etcd stores keys in a sequence and there is a special key `\0` which you can use to target the first or the last key in the store.
 
 ```ts
-kv.range({
+client.range({
   key: new Buffer("\0"), // first key
   rangeEnd: new Buffer("\0"), // last key
 }).then((res) => {
@@ -85,10 +85,10 @@ kv.range({
 });
 ```
 
-Another trick is that if you set `rangeEnd` to a `key` plus one byte, the etcd will read keys from `key` to the last key prefixed with `key` (all keys of a directory). This means that if the `key` name is `/aaa`, then to get the rest of the keys of that prefix, we need to set `rangeEnd` to `aab`. You can use the [incstr](https://www.npmjs.com/package/incstr) NPM module to increment strings or check the [Stackoverflow](https://stackoverflow.com/q/38352497/132257) page.
+Another trick is that if you set `rangeEnd` to the `key` plus one byte, the etcd will read keys from `key` to the last key prefixed with `key` (all keys of a directory). This means that if the `key` name is `/aaa`, then to get the rest of the keys of that prefix, we need to set `rangeEnd` to `aab`. You can use the [incstr](https://www.npmjs.com/package/incstr) NPM module to increment strings or check the [Stackoverflow](https://stackoverflow.com/q/38352497/132257) page.
 
 ```ts
-kv.range({
+client.range({
   key: new Buffer("name/aaa"), // start key
   rangeEnd: new Buffer("name/aab"), // get all keys `name/{something}` from `name/aaa`
 }).then((res) => {
@@ -99,7 +99,7 @@ kv.range({
 Keys can be deleted from the server using the `rangeDelete` method. In the following example we delete a single key `name`.
 
 ```ts
-kv.rangeDelete({
+client.rangeDelete({
   key: new Buffer("name"),
 }).then((res) => {
   console.log(res);
@@ -111,7 +111,7 @@ We can also perform multiple operations in transaction using the `txn` method. T
 ```js
 import { CompareResult, CompareTarget } from "etcd-grpc";
 
-kv.txn({
+client.txn({
   compare: {
     result: CompareResult.EQUAL, // must be equal to
     target: CompareTarget.VALUE, // check the value
@@ -135,16 +135,33 @@ kv.txn({
 });
 ```
 
-There's more so please use TypeScript or check the [source files](https://github.com/xpepermint/etcd-grpc/blob/master/src/lib/kv.ts).
+There's more so please use TypeScript or check the [source files](https://github.com/xpepermint/etcd-grpc/blob/master/src/lib/rpc.ts).
 
-### Watch Client
+### Lease Service
+
+The `Lease` service provides an interface for managing keys TTL. We can use that to set the automatic expiration for one or multiple keys. The following example shows how to set a key which is automatically removed after 10s.
+
+```js
+client.leaseGrant({
+  ttl: 5,
+  id: 100
+}).then(({ id }) => {
+  return client.put({
+    key: new Buffer("name"),
+    value: new Buffer("John"),
+    lease: id, // attach this key to lease
+  });
+});
+```
+
+There's more so please use TypeScript or check the [source files](https://github.com/xpepermint/etcd-grpc/blob/master/src/lib/rpc.ts).
+
+### Watch Service
 
 The `Watch` service allows us to connect to the `etcd` server and listen for changes. The example below shows how to quickly setup a watcher.
 
 ```js
-import { WatchClient } from "etcd-grpc";
-
-const watcher = new WatchClient();
+const watcher = client.createWatcher();
 watcher.on("data", console.log);
 watcher.on("finish", console.log);
 watcher.on("end", console.log);
@@ -155,52 +172,22 @@ watcher.watch({ // watch the `name` key
 });
 ```
 
-Watcher can be paused by calling the `cancel()` method. To start watching again, we can run the `watch()` method again.
-
-```ts
-watcher.cancel(); // stop watching
-watcher.watch({ // continue watching the `name` key
-  key: new Buffer("name"),
-});
-```
-
-Watcher also provides the `reconnect()` method which we can use in case of conectivity problems. The method will reconnect the client to the next available endpoint.
+The `watch()` command can be called multiple times. It will automatically cose the previous watch request. This is handy when handling a reconnect.
 
 ```ts
 import { getErrorKind, ErrorKind } from "etcd-grpc";
 
 watcher.on("error", (err) => {
   if (getErrorKind(err) === ErrorKind.CONNECTION_FAILED) {
-    watcher.reconnect(); // reconfigure the client
-    watcher.watch({ ... }); // try-again code
+    client.reconnect(); // reconfigure the client
+    watcher.watch({ ... }); // start watching through reconfigured client
   }
 });
 ```
 
+Watcher can be closed by calling the `close()` method.
+
 There's more so please use TypeScript or check the [source files](https://github.com/xpepermint/etcd-grpc/blob/master/src/lib/watch.ts).
-
-### Lease Client
-
-The `Lease` service provides an interface for managing keys TTL. We can use that to set the automatic expiration for one or multiple keys. The following example shows how to set a key which is automatically removed after 10s.
-
-```js
-import { LeaseClient } from "etcd-grpc";
-
-const lease = new LeaseClient();
-
-lease.leaseGrant({
-  ttl: 5,
-  id: 100
-}).then(({ id }) => {
-  return kv.put({
-    key: new Buffer("name"),
-    value: new Buffer("John"),
-    lease: id, // attach this key to lease
-  });
-});
-```
-
-Note also that this client provides the same connectivity logic as the `KVClient`. There's more so please use TypeScript or check the [source files](https://github.com/xpepermint/etcd-grpc/blob/master/src/lib/lease.ts).
 
 ## Related Packages
 

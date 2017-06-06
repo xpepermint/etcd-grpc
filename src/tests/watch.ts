@@ -1,8 +1,9 @@
 import test from "ava";
-import { WatchClient, getErrorKind, ErrorKind } from "..";
+import { Etcd, Watcher, getErrorKind, ErrorKind } from "..";
 
 test.cb("method `watch` starts listening for changes", (t) => {
-  const watcher = new WatchClient();
+  const client = new Etcd();
+  const watcher = client.createWatcher();
   watcher.watch({
     key: new Buffer("\0"),
   });
@@ -15,9 +16,10 @@ test.cb("method `watch` starts listening for changes", (t) => {
 });
 
 test.cb("throws error when no connection", (t) => {
-  const watcher = new WatchClient({
+  const client = new Etcd({
     endpoints: ["127.0.0.1:7891"],
   });
+  const watcher = client.createWatcher();
   watcher.watch({
     key: new Buffer("\0"),
   });
@@ -28,12 +30,13 @@ test.cb("throws error when no connection", (t) => {
 });
 
 test.cb("method `reconnect` connects to the next available endpoint", (t) => {
-  const watcher = new WatchClient({
+  const client = new Etcd({
     endpoints: ["127.0.0.1:7891", "127.0.0.1:2379"],
   });
+  const watcher = client.createWatcher();
   watcher.on("error", (e) => {
     t.is(getErrorKind(e) === ErrorKind.CONNECTION_FAILED, true);
-    watcher.reconnect();
+    client.reconnect();
     watcher.watch({
       key: new Buffer("\0"),
     });

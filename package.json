@@ -1,6 +1,6 @@
 {
   "name": "etcd-grpc",
-  "version": "0.5.5",
+  "version": "0.6.1",
   "description": "A gRPC based etcd client for NodeJS targeting etcd V3.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

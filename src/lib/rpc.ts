@@ -1,4 +1,101 @@
-import { Client, IKeyValue, IResponseHeader } from "./client";
+import * as path from "path";
+import * as grpc from "grpc";
+import { EventEmitter } from "events";
+import { normalizeKeys } from "object-keys-normalizer";
+import { Watcher } from "./watch";
+
+/**
+ * Key value interface.
+ */
+export interface IKeyValue {
+  /**
+   * The key in bytes. An empty key is not allowed.
+   */
+  key: Buffer;
+  /**
+   * The revision of last creation on this key.
+   */
+  createRevision: number | string;
+  /**
+   * The revision of last modification on this key.
+   */
+  modRevision: number | string;
+  /**
+   * The version of the key. A deletion resets the version
+   * to zero and any modification of the key increases its version.
+   */
+  version: number | string;
+  /**
+   * The value held by the key, in bytes.
+   */
+  value: Buffer;
+  /**
+   * The ID of the lease that attached to key. When the attached lease
+   * expires, the key will be deleted. If lease is 0, then no lease is
+   * attached to the key.
+   */
+  lease: number | string;
+}
+
+/**
+ * Available values for event type.
+ */
+export enum EventType {
+  /**
+   * Filter out put event.
+   */
+  PUT = 0,
+  /**
+   * Filter out delete event.
+   */
+  DELETE = 1,
+}
+
+/**
+ * Event interface.
+ */
+export interface IEvent {
+  /**
+   * The kind of event. If type is a PUT, it indicates new data has been stored to the
+   * key. If type is a DELETE, it indicates the key was deleted.
+   */
+  type: EventType;
+  /**
+   * Holds the KeyValue for the event. A PUT event contains current kv pair. A PUT event
+   * with kv.Version=1 indicates the creation of a key. A DELETE/EXPIRE event contains
+   * the deleted key with its modification revision set to the revision of deletion.
+   */
+  kv: IKeyValue;
+  /**
+   * Holds the key-value pair before the event happens.
+   */
+  prevKv: IKeyValue;
+}
+
+/**
+ * Response header interface.
+ */
+export interface IResponseHeader {
+  /**
+   * The ID of the cluster which sent the response.
+   */
+  clusterId: number | string;
+  /**
+   * The ID of the member which sent the response.
+   */
+  memberId: number | string;
+  /**
+   * The key-value store revision when the request was applied. This value is the current
+   * revision of etcd. It is incremented every time the etcd database is modified.
+   */
+  revision: number | string;
+  /**
+   * The raft term when the request was applied. This number will increase whenever an etcd
+   * master election happens in the cluster. If this number is increasing rapidly, you may
+   * need to tune the election timeout.
+   */
+  raftTerm: number | string;
+}
 
 /**
  * Available values sort order.
@@ -143,7 +240,7 @@ export interface IPutRequest {
    */
   lease?: number | string;
   /**
-   * If set, etcd gets the previous key-value pair before changing it. The
+   * If true, etcd gets the previous key-value pair before changing it. The
    * previous key-value pair will be returned in the put response.
    */
   prevKv?: boolean;
@@ -360,9 +457,114 @@ export interface ICompare {
 }
 
 /**
- * Key-value client client.
+ * Grant lease request interface.
  */
-export class KVClient extends Client {
+export interface ILeaseGrantRequest {
+  /**
+   * The advisory time-to-live in seconds.
+   */
+  ttl?: number | string;
+  /**
+   * The requested ID for the lease. If ID is set to 0, the lessor chooses an ID.
+   */
+  id?: number | string;
+}
+
+/**
+ * Grant lease response interface.
+ */
+export interface ILeaseGrantResponse {
+  /**
+   * Request metadata.
+   */
+  header: IResponseHeader;
+  /**
+   * The lease ID for the granted lease.
+   */
+  id: number | string;
+  /**
+   * the server chosen lease time-to-live in seconds.
+   */
+  ttl: number | string;
+  /**
+   * Error message.
+   */
+  error: string;
+}
+
+/**
+ * Revoke lease request interface.
+ */
+export interface ILeaseRevokeRequest {
+  /**
+   * The lease ID to revoke. When the ID is revoked, all associated keys will be deleted.
+   */
+  id?: number | string;
+}
+
+/**
+ * Revoke lease response interface.
+ */
+export interface ILeaseRevokeResponse {
+  /**
+   * Request metadata.
+   */
+  header: IResponseHeader;
+}
+
+/**
+ * KeepAlive lease request interface.
+ */
+export interface ILeaseKeepAliveRequest {
+  /**
+   * The lease ID for the lease to keep alive.
+   */
+  id?: number | string;
+}
+
+/**
+ * KeepAlive lease response interface.
+ */
+export interface ILeaseKeepAliveResponse {
+  /**
+   * Request metadata.
+   */
+  header: IResponseHeader;
+  /**
+   * The lease ID from the keep alive request.
+   */
+  id: number | string;
+  /**
+   * The new time-to-live for the lease.
+   */
+  ttl: number | string;
+}
+
+/**
+ * Client class scaffold.
+ */
+export class Etcd {
+  /**
+   * gRPC definitions object.
+   */
+  readonly rpc = grpc.load(path.join(__dirname, "..", "..", "proto", "rpc.proto")).etcdserverpb;
+  /**
+   * KV service instance.
+   */
+  protected kvClient = null;
+  /**
+   * Lease service instance.
+   */
+  protected leaseClient = null;
+  /**
+   * Watch service instance.
+   */
+  protected watchClient = null;
+  /**
+   * Available endpoints.
+   */
+  public endpoints: string[];
+
   /**
    * Class constructor.
    */
@@ -373,7 +575,99 @@ export class KVClient extends Client {
     endpoints?: string[];
     connect?: boolean;
   } = {}) {
-    super("KV", { endpoints, connect });
+
+    this.endpoints = [].concat(endpoints);
+
+    if (connect) {
+      this.connect();
+    }
+  }
+
+  /**
+   * Connects services.
+   */
+  public connect() {
+    if (this.kvClient) { return; }
+
+    const endpoint = this.endpoints[0];
+    const credentials = grpc.credentials.createInsecure();
+
+    this.kvClient = new this.rpc["KV"](endpoint, credentials);
+    this.leaseClient = new this.rpc["Lease"](endpoint, credentials);
+    this.watchClient = new this.rpc["Watch"](endpoint, credentials);
+
+    this.endpoints.push(this.endpoints.splice(0, 1)[0]); // roundrobin endpoints
+  }
+
+  /**
+   * Closes services.
+   */
+  public close() {
+    if (!this.kvClient) { return; }
+
+    grpc.closeClient(this.kvClient);
+    grpc.closeClient(this.leaseClient);
+    grpc.closeClient(this.watchClient);
+
+    this.kvClient = null;
+    this.leaseClient = null;
+    this.watchClient = null;
+  }
+
+  /**
+   * Reconnects to the next available server in RoundRobin style.
+   */
+  public reconnect() {
+    this.close();
+    this.connect();
+  }
+
+  /**
+   * Performs service command.
+   */
+  public perform(service, command: string, req) {
+    return new Promise((resolve, reject) => {
+      service[command](this.normalizeRequestObject(req), (err, res) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(this.normalizeResponseObject(res));
+        }
+      });
+    });
+  }
+
+  /**
+   * Returns normalized request object.
+   */
+  public normalizeRequestObject(req) {
+    let data = normalizeKeys(req, "snake");
+
+    if (data.id) {
+      data.ID = data.id;
+      delete data.id;
+    }
+    if (data.ttl) {
+      data.TTL = data.ttl;
+      delete data.ttl;
+    }
+
+    return data;
+  }
+
+  /**
+   * Returns normalized response object.
+   */
+  public normalizeResponseObject(req) {
+    let data = normalizeKeys(req, "camel");
+    return data;
+  }
+
+  /**
+   * Returns true if the client is defined.
+   */
+  public isConnected() {
+    return !!this.kvClient;
   }
 
   /**
@@ -381,23 +675,23 @@ export class KVClient extends Client {
    * revision of the key-value store and generates one event in the event history.
    */
   public put(req: IPutRequest): Promise<IPutResponse> {
-    return this.perform("put", req);
+    return this.perform(this.kvClient, "put", req);
   }
 
   /**
    * Gets the keys in the range from the key-value store.
    */
   public range(req: IRangeRequest): Promise<IRangeResponse> {
-    return this.perform("range", req);
+    return this.perform(this.kvClient, "range", req);
   }
 
   /**
-   * Deletes the given range from the key-value store. A delete request increments
-   * the revision of the key-value store and generates a delete event in the event
-   * history for every deleted key.
+   * Deletes the given range from the key-value store. A delete request
+   * increments the revision of the key-value store and generates a delete event
+   * in the event history for every deleted key.
    */
   public deleteRange(req: IDeleteRangeRequest): Promise<IDeleteRangeResponse> {
-    return this.perform("deleteRange", req);
+    return this.perform(this.kvClient, "deleteRange", req);
   }
 
   /**
@@ -406,7 +700,7 @@ export class KVClient extends Client {
    * indefinitely.
    */
   public txn(req: ITxnRequest): Promise<ITxnResponse> {
-    return this.perform("txn", req);
+    return this.perform(this.kvClient, "txn", req);
   }
 
   /**
@@ -415,6 +709,30 @@ export class KVClient extends Client {
    * indefinitely.
    */
   public compact(req: ICompactionRequest = {}): Promise<ICompactionResponse> {
-    return this.perform("compact", req);
+    return this.perform(this.kvClient, "compact", req);
+  }
+
+  /**
+   * Creates a lease which expires if the server does not receive a keepAlive
+   * within a given time to live period. All keys attached to the lease will be
+   * expired and deleted if the lease expires. Each expired key generates a
+   * delete event in the event history.
+   */
+  public leaseGrant(req: ILeaseGrantRequest): Promise<ILeaseGrantResponse> {
+    return this.perform(this.leaseClient, "leaseGrant", req);
+  }
+
+  /**
+   * Revokes a lease. All keys attached to the lease will expire and be deleted.
+   */
+  public leaseRevoke(req: ILeaseRevokeRequest): Promise<ILeaseRevokeResponse> {
+    return this.perform(this.leaseClient, "leaseRevoke", req);
+  }
+
+  /**
+   * Creates a watcher which listens for changes.
+   */
+  public createWatcher(): Watcher {
+    return new Watcher(this);
   }
 }
