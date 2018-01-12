@@ -161,7 +161,7 @@ export declare class Etcd {
     connect(): void;
     close(): void;
     reconnect(): void;
-    perform(service: any, command: string, req: any): Promise<{}>;
+    perform(service: any, command: string, req: any): Promise<any>;
     normalizeRequestObject(req: any): any;
     normalizeResponseObject(req: any): any;
     isConnected(): boolean;

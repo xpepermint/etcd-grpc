@@ -625,7 +625,7 @@ export class Etcd {
   /**
    * Performs service command.
    */
-  public perform(service, command: string, req) {
+  public perform(service, command: string, req): Promise<any> {
     return new Promise((resolve, reject) => {
       service[command](this.normalizeRequestObject(req), (err, res) => {
         if (err) {
